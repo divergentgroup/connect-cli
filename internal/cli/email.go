@@ -419,7 +419,7 @@ func printDomain(app *App, d api.SendingDomainDto) {
 }
 
 func newEmailDomains(app *App) *cobra.Command {
-	c := &cobra.Command{Use: "domains", Short: "Domains you send email from (API key only)"}
+	c := &cobra.Command{Use: "domains", Short: "Domains you send email from"}
 	var p paging
 	list := annotate(&cobra.Command{
 		Use: "list", Short: "List sending domains", Args: exactArgs(0),
@@ -433,7 +433,7 @@ func newEmailDomains(app *App) *cobra.Command {
 				return []string{d.Id, d.Domain, string(d.Status), fmtTime(d.VerifiedAt), fmtTime(d.ExpiresAt), yesNo(d.NeedsUpgrade)}
 			}))
 		},
-	}, "V2ListEmailDomains", scopeAPIKeyOnly)
+	}, "V2ListEmailDomains", "connect:email.read")
 	p.bind(list)
 	get := annotate(&cobra.Command{
 		Use: "get ID", Short: "Show a sending domain and the DNS records to publish", Args: exactArgs(1),
@@ -445,7 +445,7 @@ func newEmailDomains(app *App) *cobra.Command {
 			resp, err := c.V2GetEmailDomain(cmd.Context(), args[0], nil)
 			return app.finish(resp, err, show(func(d api.SendingDomainDto) { printDomain(app, d) }))
 		},
-	}, "V2GetEmailDomain", scopeAPIKeyOnly)
+	}, "V2GetEmailDomain", "connect:email.read")
 	add := annotate(&cobra.Command{
 		Use: "add DOMAIN", Short: "Add a sending domain and show the DNS records to publish, then run `email domains verify`", Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -456,7 +456,7 @@ func newEmailDomains(app *App) *cobra.Command {
 			resp, err := c.V2CreateEmailDomain(cmd.Context(), nil, api.CreateEmailDomainV2Request{Domain: args[0]})
 			return app.finish(resp, err, show(func(d api.SendingDomainDto) { printDomain(app, d) }))
 		},
-	}, "V2CreateEmailDomain", scopeAPIKeyOnly)
+	}, "V2CreateEmailDomain", "connect:email.setup")
 	verify := annotate(&cobra.Command{
 		Use: "verify ID", Short: "Check a domain's DNS records again; it becomes active once the required ones verify", Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -467,7 +467,7 @@ func newEmailDomains(app *App) *cobra.Command {
 			resp, err := c.V2VerifyEmailDomain(cmd.Context(), args[0], nil)
 			return app.finish(resp, err, show(func(d api.SendingDomainDto) { printDomain(app, d) }))
 		},
-	}, "V2VerifyEmailDomain", scopeAPIKeyOnly)
+	}, "V2VerifyEmailDomain", "connect:email.setup")
 	del := annotate(&cobra.Command{
 		Use: "delete ID", Short: "Remove a sending domain", Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -546,7 +546,7 @@ func newEmailIncludes(app *App) *cobra.Command {
 }
 
 func newEmailTestRecipients(app *App) *cobra.Command {
-	c := &cobra.Command{Use: "test-recipients", Short: "Addresses the shared test sender can reach (API key only)"}
+	c := &cobra.Command{Use: "test-recipients", Short: "Addresses the shared test sender can reach"}
 	list := annotate(&cobra.Command{
 		Use: "list", Short: "List test recipients", Args: exactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -559,7 +559,7 @@ func newEmailTestRecipients(app *App) *cobra.Command {
 				return []string{r.Id, r.Email, yesNo(r.Verified), fmtTime(&r.CreatedAt)}
 			}))
 		},
-	}, "V2ListEmailTestRecipients", scopeAPIKeyOnly)
+	}, "V2ListEmailTestRecipients", "connect:email.read")
 	add := annotate(&cobra.Command{
 		Use: "add EMAIL", Short: "Add a test recipient (up to 5); usable once the link emailed to it is followed", Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -573,7 +573,7 @@ func newEmailTestRecipients(app *App) *cobra.Command {
 				fmt.Fprintf(app.Err, "A confirmation link has been emailed to %s; it can receive test emails once that is followed.\n", output.Clean(r.Email))
 			}))
 		},
-	}, "V2CreateEmailTestRecipient", scopeAPIKeyOnly)
+	}, "V2CreateEmailTestRecipient", "connect:email.setup")
 	del := annotate(&cobra.Command{
 		Use: "delete ID", Short: "Remove a test recipient", Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

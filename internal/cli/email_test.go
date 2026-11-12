@@ -116,7 +116,8 @@ func TestEmailSetupCommandsRefusedUnderToken(t *testing.T) {
 	app, do := testAppWithKey(t, s)
 	_ = app.Store.Put(&creds.Profile{Name: "tok", Kind: creds.KindToken, AccessToken: "jwt", ExpiresAt: farFuture()})
 	_ = app.Store.SetDefault("tok")
-	for _, args := range [][]string{{"email", "domains", "list"}, {"email", "templates", "render", "t1"}, {"email", "includes", "list"}, {"email", "test-recipients", "list"}} {
+	// Domains and test recipients are reachable signed in (email.read / email.setup); deletes and template writes are not
+	for _, args := range [][]string{{"email", "domains", "delete", "d1"}, {"email", "templates", "render", "t1"}, {"email", "includes", "list"}, {"email", "test-recipients", "delete", "r1"}} {
 		if code, _, errb := do(args...); code != 3 || !strings.Contains(errb, "--api-key") || s.last != nil {
 			t.Fatal(args, code, errb)
 		}

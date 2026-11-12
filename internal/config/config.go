@@ -32,7 +32,7 @@ var Scopes = []string{
 	"connect:sms.read", "connect:sms.send", "connect:sms.send.live",
 	"connect:contacts.read", "connect:contacts.write", "connect:reports.read",
 	"connect:sms.senders.read", "connect:sms.senders.write",
-	"connect:email.read", "connect:email.send", "connect:email.send.live",
+	"connect:email.read", "connect:email.send", "connect:email.send.live", "connect:email.setup",
 	"openid", "offline_access",
 }
 

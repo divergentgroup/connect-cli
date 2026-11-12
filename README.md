@@ -27,9 +27,10 @@ credentials are stored in `~/.config/connect/credentials.json` with mode 0600; o
 refresh token in clear text, so protect the account. On macOS the keychain item is readable by other programs
 running as the same user.
 
-Signed-in grants are limited to the scopes you tick. Commands marked api-key-only (deleting contacts and
-lists, removing opt-outs, SMS and email template writes, email sending domains, MJML includes and test recipients,
-webhooks, API keys) are refused under a browser login with exit 3.
+Signed-in grants are limited to the scopes you tick; live sending and set-up (requesting sender names, adding
+email domains and test recipients) are opt-in on the sign-in page. Commands marked api-key-only (anything that
+deletes or cancels a sender request, removing opt-outs, SMS and email template writes, MJML includes, webhooks,
+API keys) are refused under a browser login with exit 3.
 API keys with Strict API Mode need every request signed, which the CLI cannot do: use a key without it, or
 `connect auth login`.
 

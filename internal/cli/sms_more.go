@@ -267,7 +267,7 @@ func newSmsSenders(app *App) *cobra.Command {
 			resp, err := c.V2DeleteSender(cmd.Context(), args[0], nil)
 			return app.finish(resp, err, app.done("Sender request cancelled"))
 		},
-	}, "V2DeleteSender", "connect:sms.senders.write")
+	}, "V2DeleteSender", scopeAPIKeyOnly)
 	c.AddCommand(list, check, request, verify, cancel)
 	return c
 }
