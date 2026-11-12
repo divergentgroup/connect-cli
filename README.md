@@ -60,6 +60,19 @@ Lists are cursor paged: `--limit` (1 to 200, default 50) sets the page size, and
 the CLI prints the `--cursor` value to pass on stderr. Enum values are snake_case, as in the API.
 Simulator handsets: `+447700900001` delivers, `+447700900002` fails, `+447700900003` replies.
 
+### Forward events to a local server
+
+```sh
+connect listen --forward-to http://localhost:3000/webhooks
+connect listen --forward-to http://localhost:3000/webhooks --events sms.delivered,sms.received --secret "$SECRET"
+```
+
+`connect listen` polls the event feed and POSTs every event that happens after it starts to your URL, with
+the same body and signature headers (`Content-Digest`, `Webhook-Id`, `Signature-Input`, `Signature`; RFC 9421,
+hmac-sha256, keyid 1) as a real webhook delivery, so your handler's verification runs unchanged. It prints the
+signing secret at start; pass `--secret` to keep one across runs. Events arrive a second or two after they happen
+(`--interval`, default 2s). The URL must be https, or http on localhost.
+
 ### Exit codes
 
 | Code | Meaning |

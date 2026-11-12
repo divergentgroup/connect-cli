@@ -54,7 +54,7 @@ func NewRoot(app *App) *cobra.Command {
 	root.SetOut(app.Out)
 	root.SetErr(app.Err)
 	root.SetIn(app.In)
-	root.AddCommand(newVersion(app), newDocs(app), newAuth(app), newWorkspace(app), newSms(app), newEmail(app), newContacts(app), newLists(app), newSuppressions(app), newReports(app), newBilling(app), newWebhooks(app), newAPIKeys(app), newMCP(app), newInternal(app))
+	root.AddCommand(newVersion(app), newDocs(app), newAuth(app), newWorkspace(app), newSms(app), newEmail(app), newContacts(app), newLists(app), newSuppressions(app), newReports(app), newBilling(app), newWebhooks(app), newAPIKeys(app), newMCP(app), newListen(app), newInternal(app))
 	return root
 }
 
