@@ -1,0 +1,25 @@
+name: openapi-refresh
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      CONNECT_API_URL: https://api.connect.ms
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: scripts/openapi-refresh.sh
+      - run: go generate ./... && go test ./...
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          title: "chore: refresh openapi/public-v2.json"
+          commit-message: "chore: refresh openapi/public-v2.json"
+          branch: chore/openapi-refresh

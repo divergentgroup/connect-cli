@@ -1,0 +1,13 @@
+package: api
+generate:
+  client: true
+  models: true
+output: client.gen.go
+output-options:
+  response-type-suffix: Result
+  # Leave email validation to the API, so one bad address in a CSV chunk does not fail the whole request.
+  type-mapping:
+    string:
+      formats:
+        email:
+          type: string

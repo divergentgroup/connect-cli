@@ -1,0 +1,4 @@
+dist/
+/connect
+*.test
+*.exe

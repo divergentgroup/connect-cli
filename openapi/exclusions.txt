@@ -1,0 +1,12 @@
+# Operation ids in openapi/public-v2.json that deliberately have no command, one per line with a reason.
+V2GetSmsLinks click tracking statistics are not part of the CLI yet
+V2GetSmsBatchLinks click tracking statistics are not part of the CLI yet
+V2ImportSmsBatch file import is a multipart upload; sms send-bulk sends CSV rows as batches instead
+V2RenderTemplate template rendering previews are not part of the CLI yet
+V2GetSender sms senders list shows every sender with its countries
+V2ListEvents the workspace event feed is for integrations polling with a cursor, not the CLI
+V2ListContactListContacts lists preview shows the count and a sample
+V2SetContactListContactName per-list contact names are managed in the dashboard
+V2GetApiKey api-keys list shows every key
+V2UpdateApiKey key limits, signing and Strict API Mode are managed in the dashboard
+V2RotateSigningSecret request signing is not supported by the CLI

@@ -1,0 +1,58 @@
+# goreleaser v2. CI runs this with --snapshot --skip=publish only; nothing is published from CI.
+version: 2
+project_name: connect
+before:
+  hooks:
+    - go mod verify
+builds:
+  - id: connect
+    main: ./cmd/connect
+    env: [CGO_ENABLED=0]
+    goos: [darwin, linux, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w
+      - -X github.com/divergentgroup/connect-cli/internal/config.Version={{.Version}}
+      - -X github.com/divergentgroup/connect-cli/internal/config.DefaultAPIURL={{ .Env.CONNECT_API_URL }}
+archives:
+  - id: default
+    formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files: [LICENSE, README.md]
+notarize:
+  macos:
+    - enabled: '{{ isEnvSet "MACOS_SIGN_P12" }}'
+      sign:
+        certificate: "{{ .Env.MACOS_SIGN_P12 }}"
+        password: "{{ .Env.MACOS_SIGN_PASSWORD }}"
+      notarize:
+        issuer_id: "{{ .Env.MACOS_NOTARY_ISSUER_ID }}"
+        key_id: "{{ .Env.MACOS_NOTARY_KEY_ID }}"
+        key: "{{ .Env.MACOS_NOTARY_KEY }}"
+        wait: true
+checksum:
+  name_template: checksums.txt
+nfpms:
+  - id: packages
+    package_name: connect
+    vendor: Divergent Group
+    homepage: https://connect.ms/docs/cli
+    maintainer: Divergent Group <support@divergent.group>
+    description: Command-line client for the Connect messaging API.
+    license: MIT
+    formats: [deb, rpm]
+homebrew_casks:
+  - name: connect
+    repository:
+      owner: divergentgroup
+      name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    homepage: https://connect.ms/docs/cli
+    description: Command-line client for the Connect messaging API.
+release:
+  draft: true
+changelog:
+  use: github
