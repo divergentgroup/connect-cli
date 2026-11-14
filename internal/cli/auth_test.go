@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -122,6 +123,7 @@ func newFakeIdp(t *testing.T, routes map[string][]string) *fakeIdp {
 func signupApp(t *testing.T, idp *fakeIdp, api *stub) (*App, func(args ...string) (int, string, string), string) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
+	t.Setenv("LOCALAPPDATA", dir)
 	t.Setenv("CONNECT_API_KEY", "")
 	app, out, errb := newTestApp()
 	app.Issuer = idp.URL
@@ -135,6 +137,9 @@ func signupApp(t *testing.T, idp *fakeIdp, api *stub) (*App, func(args ...string
 		return code, out.String(), errb.String()
 	}, filepath.Join(dir, "connect", "signup.json")
 }
+
+// private: owner-only on Unix; Windows has no POSIX modes.
+func private(fi os.FileInfo) bool { return runtime.GOOS == "windows" || fi.Mode().Perm() == 0o600 }
 
 var startFlags = []string{"auth", "signup", "--name", "A", "--email", "a@x.io", "--phone", "+447700900000", "--workspace", "Acme", "--agree-terms"}
 
@@ -150,7 +155,7 @@ func TestSignupFlowToDoneStoresProfileAndRemovesState(t *testing.T) {
 		t.Fatal(code, out, errb)
 	}
 	fi, err := os.Stat(state)
-	if err != nil || fi.Mode().Perm() != 0o600 {
+	if err != nil || !private(fi) {
 		t.Fatal(err, fi)
 	}
 	// no flags with state present: hint, no new sign-up
@@ -277,7 +282,7 @@ func TestSignupStateFileBecomesMode0600(t *testing.T) {
 	if code, _, errb := do(startFlags...); code != 0 {
 		t.Fatal(code, errb)
 	}
-	if fi, err := os.Stat(state); err != nil || fi.Mode().Perm() != 0o600 {
+	if fi, err := os.Stat(state); err != nil || !private(fi) {
 		t.Fatal(err, fi)
 	}
 }
