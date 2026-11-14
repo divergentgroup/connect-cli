@@ -90,6 +90,9 @@ func SolvePow(ctx context.Context, challenge string, difficulty int) (string, er
 	}
 }
 
+// The sign-up calls; the final code provisions the account and workspace, which can take a while.
+var signupHTTP = &http.Client{Timeout: 90 * time.Second}
+
 func post(ctx context.Context, url string, body any) (*Step, error) {
 	b, _ := json.Marshal(body)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(b))
@@ -97,7 +100,7 @@ func post(ctx context.Context, url string, body any) (*Step, error) {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
+	resp, err := signupHTTP.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +172,7 @@ func SignupFinish(ctx context.Context, issuer string, st *SignupState, credentia
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := (&http.Client{Timeout: 30 * time.Second}).Do(req)
+	resp, err := signupHTTP.Do(req)
 	if err != nil {
 		return nil, err
 	}
