@@ -21,6 +21,17 @@ connect auth login --api-key       # reads a workspace API key from stdin, never
 connect auth status
 ```
 
+### Sign up
+
+An agent can create a workspace for a person who has no account. Ask the person for each code, and show them
+the [online services agreement](https://divergent.group/legal/online-services-agreement); pass `--agree-terms` only once they agree.
+
+```sh
+connect auth signup --name "Ada Lovelace" --email ada@example.com --phone +447700900000 --workspace "Analytical Ltd" --agree-terms
+connect auth signup verify CODE    # for each code the person receives
+connect auth signup resend         # if a code did not arrive
+```
+
 `CONNECT_API_KEY` in the environment overrides any stored profile, which suits CI. Keys are never echoed,
 never accepted as arguments and never written to logs. With `--no-keyring` (or when no OS keyring exists)
 credentials are stored in `~/.config/connect/credentials.json` with mode 0600; on Unix that file holds the

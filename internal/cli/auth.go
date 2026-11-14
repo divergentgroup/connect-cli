@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -38,11 +40,8 @@ With --api-key the key is read from stdin (pipe it, or use "-") or a hidden prom
 There is no flag that takes the key inline: keys must never land in shell history or agent transcripts.`,
 		Args: exactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			store, err := app.store()
-			if err != nil {
-				return err
-			}
 			var p *creds.Profile
+			var err error
 			if apiKey {
 				key, err := readSecret(app, "API key: ")
 				if err != nil {
@@ -54,35 +53,13 @@ There is no flag that takes the key inline: keys must never land in shell histor
 					return apierr.Auth(err.Error())
 				}
 			}
-			summary, err := app.summary(cmd.Context(), &creds.Credential{Profile: p})
-			if err != nil {
-				// A key or grant that cannot even read the workspace summary is useless; but an API
-				// that lacks the endpoint (older deployment) should not lose a successful sign-in.
-				var ae *apierr.Error
-				if !errors.As(err, &ae) || ae.Code != "not_found" {
-					return err
-				}
-				fmt.Fprintf(app.Err, "Warning: could not read the workspace summary (%s); saving the credential without a workspace name.\n", output.Clean(ae.Message))
-				summary = &api.WorkspaceDto{Id: p.WorkspaceID, Name: p.WorkspaceID}
-			}
-			p.WorkspaceName = summary.Name
-			if p.WorkspaceID == "" {
-				p.WorkspaceID = summary.Id
-			}
-			p.Name = app.Profile
-			if p.Name == "" {
-				p.Name = creds.ProfileName(summary.Name)
-			}
-			if err := store.Put(p); err != nil {
-				return err
-			}
-			if err := store.SetDefault(p.Name); err != nil {
+			if err := saveProfile(app, cmd, p); err != nil {
 				return err
 			}
 			if p.Kind == creds.KindAPIKey {
-				fmt.Fprintf(app.Out, "Stored API key for %s as profile %q.\n", output.Clean(summary.Name), p.Name)
+				fmt.Fprintf(app.Out, "Stored API key for %s as profile %q.\n", output.Clean(p.WorkspaceName), p.Name)
 			} else {
-				fmt.Fprintf(app.Out, "Signed in to %s with scopes %s.\n", output.Clean(summary.Name), strings.Join(p.Scopes, " "))
+				fmt.Fprintf(app.Out, "Signed in to %s with scopes %s.\n", output.Clean(p.WorkspaceName), strings.Join(p.Scopes, " "))
 			}
 			return nil
 		},
@@ -91,6 +68,37 @@ There is no flag that takes the key inline: keys must never land in shell histor
 	c.Flags().BoolVar(&noBrowser, "no-browser", false, "print the sign-in URL and paste the redirect back (SSH/headless)")
 	c.Flags().IntVar(&port, "callback-port", 0, "pin the loopback callback port (for ssh -L)")
 	return c
+}
+
+// saveProfile names a signed-in profile after its workspace and stores it as the default.
+func saveProfile(app *App, cmd *cobra.Command, p *creds.Profile) error {
+	store, err := app.store()
+	if err != nil {
+		return err
+	}
+	summary, err := app.summary(cmd.Context(), &creds.Credential{Profile: p})
+	if err != nil {
+		// A key or grant that cannot even read the workspace summary is useless; but an API
+		// that lacks the endpoint (older deployment) should not lose a successful sign-in.
+		var ae *apierr.Error
+		if !errors.As(err, &ae) || ae.Code != "not_found" {
+			return err
+		}
+		fmt.Fprintf(app.Err, "Warning: could not read the workspace summary (%s); saving the credential without a workspace name.\n", output.Clean(ae.Message))
+		summary = &api.WorkspaceDto{Id: p.WorkspaceID, Name: p.WorkspaceID}
+	}
+	p.WorkspaceName = summary.Name
+	if p.WorkspaceID == "" {
+		p.WorkspaceID = summary.Id
+	}
+	p.Name = app.Profile
+	if p.Name == "" {
+		p.Name = creds.ProfileName(summary.Name)
+	}
+	if err := store.Put(p); err != nil {
+		return err
+	}
+	return store.SetDefault(p.Name)
 }
 
 // readSecret reads one line from stdin when piped, else a hidden TTY prompt. Never echoes.
@@ -199,14 +207,151 @@ func newAuthLogout(app *App) *cobra.Command {
 	}
 }
 
+const signupHelp = `Creates a workspace and signs in, one step at a time. The server decides what comes next (a code to enter, a browser step) and its message says what to do.
+
+Ask the person for each code. Show them https://divergent.group/legal/online-services-agreement and pass --agree-terms only once they agree.
+
+Continue with "connect auth signup verify CODE", or "connect auth signup resend" if the code did not arrive.`
+
 func newAuthSignup(app *App) *cobra.Command {
-	return &cobra.Command{
+	var req auth.StartRequest
+	c := &cobra.Command{
 		Use:   "signup",
-		Short: "Create a workspace (coming soon)",
+		Short: "Create a workspace and sign in (email and phone codes)",
+		Long:  signupHelp,
 		Args:  exactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			fmt.Fprintln(app.Out, "Agent-driven signup is coming soon. Create a workspace at https://new.puresms.app and run `connect auth login`.")
-			return nil
+			if !cmd.Flags().Changed("name") && !cmd.Flags().Changed("email") && !cmd.Flags().Changed("phone") && !cmd.Flags().Changed("workspace") {
+				if _, err := loadSignup(); err == nil {
+					fmt.Fprintln(app.Out, "A sign-up is already in progress. Use `connect auth signup verify CODE` or `connect auth signup resend`, or pass the flags to start over.")
+					return nil
+				}
+			}
+			st, step, err := auth.SignupStart(cmd.Context(), app.issuer(), req)
+			if err != nil {
+				return apierr.Upstream(err)
+			}
+			if st.ID != "" {
+				if err := saveSignup(st); err != nil {
+					return err
+				}
+			}
+			return signupStep(app, cmd, st, step)
 		},
+	}
+	c.Flags().StringVar(&req.Name, "name", "", "the person's name")
+	c.Flags().StringVar(&req.Email, "email", "", "the person's email address")
+	c.Flags().StringVar(&req.Phone, "phone", "", "the person's mobile number")
+	c.Flags().StringVar(&req.WorkspaceName, "workspace", "", "name for the new workspace")
+	c.Flags().StringVar(&req.Brand, "brand", "", "connect or puresms (default if omitted)")
+	c.Flags().BoolVar(&req.AgreeTerms, "agree-terms", false, "the person has read and agreed to the online services agreement")
+	c.Flags().BoolVar(&req.AllowSetup, "allow-setup", false, "also allow set-up actions (sender names, email domains, test recipients)")
+
+	verify := &cobra.Command{
+		Use:   "verify CODE",
+		Short: "Submit the code the person received",
+		Args:  exactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			st, err := loadSignup()
+			if err != nil {
+				return err
+			}
+			step, err := auth.SignupCode(cmd.Context(), app.issuer(), st, strings.TrimSpace(args[0]))
+			if err != nil {
+				return apierr.Upstream(err)
+			}
+			return signupStep(app, cmd, st, step)
+		},
+	}
+	resend := &cobra.Command{
+		Use:   "resend",
+		Short: "Send the current code again",
+		Args:  exactArgs(0),
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			st, err := loadSignup()
+			if err != nil {
+				return err
+			}
+			step, err := auth.SignupResend(cmd.Context(), app.issuer(), st)
+			if err != nil {
+				return apierr.Upstream(err)
+			}
+			return signupStep(app, cmd, st, step)
+		},
+	}
+	c.AddCommand(verify, resend)
+	return c
+}
+
+// signupStep reports a server answer and acts on what it says comes next. The server owns the rules.
+func signupStep(app *App, cmd *cobra.Command, st *auth.SignupState, step *auth.Step) error {
+	msg := output.Clean(step.Message)
+	switch {
+	case step.Status == http.StatusNotFound:
+		removeSignup()
+		return &apierr.Error{Code: "not_found", Message: msg + " If you already finished signing up, run `connect auth status`; otherwise start again with `connect auth signup`."}
+	case step.Status == http.StatusBadRequest:
+		return &apierr.Error{Code: "validation", Message: msg}
+	case step.Status >= 500 || step.Status != http.StatusOK && step.Status != http.StatusConflict:
+		return &apierr.Error{Code: "upstream", Message: msg}
+	}
+	result := map[string]any{"next": step.Next, "message": msg}
+	switch step.Next {
+	case "browser", "restart":
+		removeSignup()
+	case "done":
+		p, err := auth.SignupFinish(cmd.Context(), app.issuer(), st, step.Credential)
+		if err != nil {
+			return apierr.Auth(err.Error())
+		}
+		removeSignup()
+		if err := saveProfile(app, cmd, p); err != nil {
+			return err
+		}
+		result["profile"], result["workspaceId"], result["workspaceName"] = p.Name, p.WorkspaceID, p.WorkspaceName
+	}
+	if app.JSON {
+		return json.NewEncoder(app.Out).Encode(result)
+	}
+	fmt.Fprintln(app.Out, msg)
+	return nil
+}
+
+func signupPath() (string, error) {
+	d, err := config.ConfigDir()
+	return filepath.Join(d, "signup.json"), err
+}
+
+func loadSignup() (*auth.SignupState, error) {
+	p, err := signupPath()
+	if err != nil {
+		return nil, err
+	}
+	b, err := os.ReadFile(p)
+	var st auth.SignupState
+	if err != nil || json.Unmarshal(b, &st) != nil || st.ID == "" {
+		return nil, apierr.Usage("no sign-up in progress; start one with `connect auth signup --name ... --email ... --phone ... --workspace ... --agree-terms`")
+	}
+	return &st, nil
+}
+
+func saveSignup(st *auth.SignupState) error {
+	p, err := signupPath()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return err
+	}
+	b, _ := json.Marshal(st)
+	if err := os.WriteFile(p, b, 0o600); err != nil {
+		return err
+	}
+	return os.Chmod(p, 0o600)
+}
+
+func removeSignup() {
+	if p, err := signupPath(); err == nil {
+		_ = os.Remove(p)
 	}
 }
