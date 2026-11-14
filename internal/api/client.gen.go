@@ -18,6 +18,87 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for BusinessLegalForm.
+const (
+	BusinessLegalFormLimitedCompany BusinessLegalForm = "limited_company"
+	BusinessLegalFormNonProfit      BusinessLegalForm = "non_profit"
+	BusinessLegalFormOther          BusinessLegalForm = "other"
+	BusinessLegalFormPartnership    BusinessLegalForm = "partnership"
+	BusinessLegalFormPublicCompany  BusinessLegalForm = "public_company"
+	BusinessLegalFormSoleTrader     BusinessLegalForm = "sole_trader"
+)
+
+// Valid indicates whether the value is a known member of the BusinessLegalForm enum.
+func (e BusinessLegalForm) Valid() bool {
+	switch e {
+	case BusinessLegalFormLimitedCompany:
+		return true
+	case BusinessLegalFormNonProfit:
+		return true
+	case BusinessLegalFormOther:
+		return true
+	case BusinessLegalFormPartnership:
+		return true
+	case BusinessLegalFormPublicCompany:
+		return true
+	case BusinessLegalFormSoleTrader:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BusinessProfileV2Status.
+const (
+	BusinessProfileV2StatusDraft         BusinessProfileV2Status = "draft"
+	BusinessProfileV2StatusPendingReview BusinessProfileV2Status = "pending_review"
+	BusinessProfileV2StatusRejected      BusinessProfileV2Status = "rejected"
+	BusinessProfileV2StatusVerified      BusinessProfileV2Status = "verified"
+)
+
+// Valid indicates whether the value is a known member of the BusinessProfileV2Status enum.
+func (e BusinessProfileV2Status) Valid() bool {
+	switch e {
+	case BusinessProfileV2StatusDraft:
+		return true
+	case BusinessProfileV2StatusPendingReview:
+		return true
+	case BusinessProfileV2StatusRejected:
+		return true
+	case BusinessProfileV2StatusVerified:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for BusinessUseCase.
+const (
+	BusinessUseCaseAlerts         BusinessUseCase = "alerts"
+	BusinessUseCaseAuthentication BusinessUseCase = "authentication"
+	BusinessUseCaseConversations  BusinessUseCase = "conversations"
+	BusinessUseCaseMarketing      BusinessUseCase = "marketing"
+	BusinessUseCaseOther          BusinessUseCase = "other"
+)
+
+// Valid indicates whether the value is a known member of the BusinessUseCase enum.
+func (e BusinessUseCase) Valid() bool {
+	switch e {
+	case BusinessUseCaseAlerts:
+		return true
+	case BusinessUseCaseAuthentication:
+		return true
+	case BusinessUseCaseConversations:
+		return true
+	case BusinessUseCaseMarketing:
+		return true
+	case BusinessUseCaseOther:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ContactListKind.
 const (
 	AllContacts ContactListKind = "all_contacts"
@@ -951,11 +1032,101 @@ type ApiKeySigningInputDto struct {
 	PublicKey *string `json:"publicKey,omitempty"`
 }
 
+// ApplyCompanyV2Request The Companies House company to use.
+type ApplyCompanyV2Request struct {
+	// Number The Companies House number, as returned by the company search, for example 01234567.
+	Number string `json:"number"`
+}
+
 // BatchUpsertContactsRequest The contacts to create or update.
 type BatchUpsertContactsRequest struct {
 	// Contacts The contacts to write, between 1 and 1000. Each is matched on its number: an existing contact is updated (fields left out are kept), otherwise one is created; tags are ignored here.
 	Contacts []CreateContactRequest `json:"contacts"`
 }
+
+// BusinessLegalForm The legal form of the business: limited_company (a private limited company, such as a UK Ltd), public_company (a public limited company, such as a UK PLC), sole_trader (a person trading in their own name), partnership, non_profit (a charity or other non-profit) or other.
+type BusinessLegalForm string
+
+// BusinessProfileMissingFieldDto A field that still needs an answer before the profile can be submitted.
+type BusinessProfileMissingFieldDto struct {
+	// Field The field, named as on the business profile (for example legalForm or contactPhone). registrationNumber is filled by picking a company, vatNumber and identityVerification only in the dashboard.
+	Field string `json:"field"`
+
+	// Message What to provide, in words a person can act on.
+	Message string `json:"message"`
+}
+
+// BusinessProfileV2Dto The business behind the workspace. Sender names are held until it is verified.
+type BusinessProfileV2Dto struct {
+	// AddressLine The first line of the business address, or null when not given.
+	AddressLine *string `json:"addressLine,omitempty"`
+
+	// City The town or city, or null when not given.
+	City *string `json:"city,omitempty"`
+
+	// ContactEmail The email address to contact the business about verification, or null when not given.
+	ContactEmail *string `json:"contactEmail,omitempty"`
+
+	// ContactPhone The contact phone number in international format (for example +447700900123), or null when not given.
+	ContactPhone *string `json:"contactPhone,omitempty"`
+
+	// ContentUrlsAndNumbers The links and phone numbers the messages will contain, or "none". Null when not given.
+	ContentUrlsAndNumbers *string `json:"contentUrlsAndNumbers,omitempty"`
+
+	// Country The country the business is registered in, as an ISO 3166-1 alpha-2 code.
+	Country string `json:"country"`
+
+	// DashboardUrl The dashboard page where a person can finish anything this API cannot do, such as identity verification, documents or a VAT number.
+	DashboardUrl string `json:"dashboardUrl"`
+
+	// HeldRequests How many sender and number requests are waiting for this profile to be verified.
+	HeldRequests int32 `json:"heldRequests"`
+
+	// Id The unique id of the business profile.
+	Id string `json:"id"`
+
+	// IdentityVerificationRequired True when the person must verify their identity before submitting. That is done only in the dashboard, at dashboardUrl.
+	IdentityVerificationRequired bool `json:"identityVerificationRequired"`
+
+	// LegalForm The legal form of the business: limited_company (a private limited company, such as a UK Ltd), public_company (a public limited company, such as a UK PLC), sole_trader (a person trading in their own name), partnership, non_profit (a charity or other non-profit) or other.
+	LegalForm *BusinessLegalForm `json:"legalForm,omitempty"`
+
+	// LegalName The registered or trading name of the business, or null when not given.
+	LegalName *string `json:"legalName,omitempty"`
+
+	// Missing What still has to be provided before the profile can be submitted. Empty when it is complete or can no longer be changed.
+	Missing []BusinessProfileMissingFieldDto `json:"missing"`
+
+	// PostalCode The postal code, or null when not given.
+	PostalCode *string `json:"postalCode,omitempty"`
+
+	// RegistrationNumber The Companies House number, set by picking a company. Null otherwise.
+	RegistrationNumber *string `json:"registrationNumber,omitempty"`
+
+	// RegistryLocked True when a register (Companies House or VIES) supplied the name and address, which can then no longer be changed.
+	RegistryLocked bool `json:"registryLocked"`
+
+	// RejectionReason Why the profile was rejected, or null.
+	RejectionReason *string `json:"rejectionReason,omitempty"`
+
+	// Status The verification status of the business profile: draft (still being filled in), pending_review (submitted and waiting for review), verified, or rejected (see rejectionReason; fix it and submit again).
+	Status BusinessProfileV2Status `json:"status"`
+
+	// UseCase What the messages are for: marketing (offers and promotions), alerts (notifications, reminders and updates), authentication (one-time passcodes), conversations (two-way messaging with customers) or other.
+	UseCase *BusinessUseCase `json:"useCase,omitempty"`
+
+	// VatNumber The EU VAT number confirmed with VIES, or null. It can only be entered in the dashboard.
+	VatNumber *string `json:"vatNumber,omitempty"`
+
+	// Website The business website or public page, or null when not given. Not required for a sole trader.
+	Website *string `json:"website,omitempty"`
+}
+
+// BusinessProfileV2Status The verification status of the business profile: draft (still being filled in), pending_review (submitted and waiting for review), verified, or rejected (see rejectionReason; fix it and submit again).
+type BusinessProfileV2Status string
+
+// BusinessUseCase What the messages are for: marketing (offers and promotions), alerts (notifications, reminders and updates), authentication (one-time passcodes), conversations (two-way messaging with customers) or other.
+type BusinessUseCase string
 
 // ClientTagDayDto Volume and cost for one client tag on one day.
 type ClientTagDayDto struct {
@@ -988,6 +1159,24 @@ type ClientTagReportDto struct {
 
 	// Tag The client tag.
 	Tag string `json:"tag"`
+}
+
+// CompanyMatchDto A company on the Companies House register.
+type CompanyMatchDto struct {
+	// Address The registered office address on one line, or null.
+	Address *string `json:"address,omitempty"`
+
+	// IncorporatedOn The date of incorporation (YYYY-MM-DD), or null.
+	IncorporatedOn *string `json:"incorporatedOn,omitempty"`
+
+	// Name The registered name.
+	Name string `json:"name"`
+
+	// Number The Companies House number. Pass it to the company endpoint to pick this company.
+	Number string `json:"number"`
+
+	// Status The register status, such as active or dissolved, or null.
+	Status *string `json:"status,omitempty"`
 }
 
 // ContactBatchErrorDto A row of the request that was not accepted.
@@ -1768,6 +1957,15 @@ type LatencyReportDto struct {
 type ListResponseOfApiKeyDto struct {
 	// Data The items on this page.
 	Data []ApiKeyDto `json:"data"`
+
+	// NextCursor Pass as cursor to fetch the next page. Null when there are no more results, except on the events feed, which always returns one.
+	NextCursor *string `json:"nextCursor,omitempty"`
+}
+
+// ListResponseOfCompanyMatchDto A page of results.
+type ListResponseOfCompanyMatchDto struct {
+	// Data The items on this page.
+	Data []CompanyMatchDto `json:"data"`
 
 	// NextCursor Pass as cursor to fetch the next page. Null when there are no more results, except on the events feed, which always returns one.
 	NextCursor *string `json:"nextCursor,omitempty"`
@@ -2892,6 +3090,42 @@ type UpdateApiKeyRequest struct {
 	StrictMode *bool `json:"strictMode,omitempty"`
 }
 
+// UpdateBusinessProfileV2Request The business profile fields to change. A field that is omitted or null is left as it is.
+type UpdateBusinessProfileV2Request struct {
+	// AddressLine The first line of the business address, up to 100 characters.
+	AddressLine *string `json:"addressLine,omitempty"`
+
+	// City The town or city, up to 100 characters.
+	City *string `json:"city,omitempty"`
+
+	// ContactEmail The email address to contact the business about verification, up to 256 characters.
+	ContactEmail *string `json:"contactEmail,omitempty"`
+
+	// ContactPhone The contact phone number in international format, for example +447700900123. Spaces are removed.
+	ContactPhone *string `json:"contactPhone,omitempty"`
+
+	// ContentUrlsAndNumbers The links and phone numbers the messages will contain, or "none". Up to 1024 characters.
+	ContentUrlsAndNumbers *string `json:"contentUrlsAndNumbers,omitempty"`
+
+	// Country The country the business is registered in, as an ISO 3166-1 alpha-2 code. Changing it clears any Companies House or VAT details.
+	Country *string `json:"country,omitempty"`
+
+	// LegalForm The legal form of the business: limited_company (a private limited company, such as a UK Ltd), public_company (a public limited company, such as a UK PLC), sole_trader (a person trading in their own name), partnership, non_profit (a charity or other non-profit) or other.
+	LegalForm *BusinessLegalForm `json:"legalForm,omitempty"`
+
+	// LegalName The registered or trading name of the business, up to 128 characters.
+	LegalName *string `json:"legalName,omitempty"`
+
+	// PostalCode The postal code, up to 15 characters.
+	PostalCode *string `json:"postalCode,omitempty"`
+
+	// UseCase What the messages are for: marketing (offers and promotions), alerts (notifications, reminders and updates), authentication (one-time passcodes), conversations (two-way messaging with customers) or other.
+	UseCase *BusinessUseCase `json:"useCase,omitempty"`
+
+	// Website The business website or public page, such as example.com or facebook.com/yourpage. Send an empty string to clear it.
+	Website *string `json:"website,omitempty"`
+}
+
 // UpdateContactListRequest The fields to change. A field that is omitted or null is left as it is; send an empty string to clear the description.
 type UpdateContactListRequest struct {
 	// Description A new description, up to 512 characters.
@@ -3146,6 +3380,9 @@ type WorkspaceDto struct {
 	// Sending Whether the workspace can send right now.
 	Sending SendingStateDto `json:"sending"`
 
+	// TestNumbers Your verified SMS test numbers (E.164), which test-mode sends may reach. Empty when the caller may not see recipients.
+	TestNumbers []string `json:"testNumbers"`
+
 	// TimeZone The workspace's IANA time zone, e.g. Europe/London, or null when not set.
 	TimeZone *string `json:"timeZone,omitempty"`
 }
@@ -3215,6 +3452,48 @@ type V2RotateApiKeyParams struct {
 
 // V2RotateSigningSecretParams defines parameters for V2RotateSigningSecret.
 type V2RotateSigningSecretParams struct {
+	// ConnectVersion The API version to use, for example 2026-10-01. Defaults to the version set on your API key.
+	ConnectVersion *string `json:"Connect-Version,omitempty"`
+
+	// IdempotencyKey A unique value of up to 255 characters, so a retried request is not acted on twice. Required for keys in Strict API Mode.
+	IdempotencyKey *string `json:"Idempotency-Key,omitempty"`
+}
+
+// V2GetBusinessProfileParams defines parameters for V2GetBusinessProfile.
+type V2GetBusinessProfileParams struct {
+	// ConnectVersion The API version to use, for example 2026-10-01. Defaults to the version set on your API key.
+	ConnectVersion *string `json:"Connect-Version,omitempty"`
+}
+
+// V2UpdateBusinessProfileParams defines parameters for V2UpdateBusinessProfile.
+type V2UpdateBusinessProfileParams struct {
+	// ConnectVersion The API version to use, for example 2026-10-01. Defaults to the version set on your API key.
+	ConnectVersion *string `json:"Connect-Version,omitempty"`
+
+	// IdempotencyKey A unique value of up to 255 characters, so a retried request is not acted on twice. Required for keys in Strict API Mode.
+	IdempotencyKey *string `json:"Idempotency-Key,omitempty"`
+}
+
+// V2SearchCompaniesParams defines parameters for V2SearchCompanies.
+type V2SearchCompaniesParams struct {
+	// Q The company name to search for, 2 to 128 characters.
+	Q string `form:"q" json:"q"`
+
+	// ConnectVersion The API version to use, for example 2026-10-01. Defaults to the version set on your API key.
+	ConnectVersion *string `json:"Connect-Version,omitempty"`
+}
+
+// V2ApplyCompanyParams defines parameters for V2ApplyCompany.
+type V2ApplyCompanyParams struct {
+	// ConnectVersion The API version to use, for example 2026-10-01. Defaults to the version set on your API key.
+	ConnectVersion *string `json:"Connect-Version,omitempty"`
+
+	// IdempotencyKey A unique value of up to 255 characters, so a retried request is not acted on twice. Required for keys in Strict API Mode.
+	IdempotencyKey *string `json:"Idempotency-Key,omitempty"`
+}
+
+// V2SubmitBusinessProfileParams defines parameters for V2SubmitBusinessProfile.
+type V2SubmitBusinessProfileParams struct {
 	// ConnectVersion The API version to use, for example 2026-10-01. Defaults to the version set on your API key.
 	ConnectVersion *string `json:"Connect-Version,omitempty"`
 
@@ -4089,6 +4368,12 @@ type V2CreateApiKeyJSONRequestBody = CreateApiKeyRequest
 // V2UpdateApiKeyJSONRequestBody defines body for V2UpdateApiKey for application/json ContentType.
 type V2UpdateApiKeyJSONRequestBody = UpdateApiKeyRequest
 
+// V2UpdateBusinessProfileJSONRequestBody defines body for V2UpdateBusinessProfile for application/json ContentType.
+type V2UpdateBusinessProfileJSONRequestBody = UpdateBusinessProfileV2Request
+
+// V2ApplyCompanyJSONRequestBody defines body for V2ApplyCompany for application/json ContentType.
+type V2ApplyCompanyJSONRequestBody = ApplyCompanyV2Request
+
 // V2CreateContactListJSONRequestBody defines body for V2CreateContactList for application/json ContentType.
 type V2CreateContactListJSONRequestBody = CreateContactListRequest
 
@@ -4320,6 +4605,63 @@ type ClientInterface interface {
 	//
 	// Corresponds with POST /v2/api-keys/{id}/rotate-signing-secret (the `V2RotateSigningSecret` operationId).
 	V2RotateSigningSecret(ctx context.Context, id string, params *V2RotateSigningSecretParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// V2GetBusinessProfile Get the business profile
+	//
+	// Returns the workspace's own business profile, starting an empty draft if there is none yet. Sender names are held until it is verified. The missing list says what still has to be provided before it can be submitted.
+	//
+	// Corresponds with GET /v2/business-profile (the `V2GetBusinessProfile` operationId).
+	V2GetBusinessProfile(ctx context.Context, params *V2GetBusinessProfileParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// V2UpdateBusinessProfileWithBody Update the business profile
+	//
+	// Changes the fields given and leaves the rest as they are. Once the profile is submitted or verified only contactEmail, contactPhone and contentUrlsAndNumbers still change; the other fields are ignored. A name filled from Companies House cannot be changed.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with PATCH /v2/business-profile (the `V2UpdateBusinessProfile` operationId).
+	V2UpdateBusinessProfileWithBody(ctx context.Context, params *V2UpdateBusinessProfileParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// V2UpdateBusinessProfile Update the business profile
+	//
+	// Changes the fields given and leaves the rest as they are. Once the profile is submitted or verified only contactEmail, contactPhone and contentUrlsAndNumbers still change; the other fields are ignored. A name filled from Companies House cannot be changed.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with PATCH /v2/business-profile (the `V2UpdateBusinessProfile` operationId).
+	V2UpdateBusinessProfile(ctx context.Context, params *V2UpdateBusinessProfileParams, body V2UpdateBusinessProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// V2SearchCompanies Search Companies House
+	//
+	// Finds UK companies by name on the Companies House register, up to five. Pick one with the company endpoint to fill in the registered name, number and address. A UK limited company or PLC must be picked this way before it can be submitted.
+	//
+	// Corresponds with GET /v2/business-profile/companies (the `V2SearchCompanies` operationId).
+	V2SearchCompanies(ctx context.Context, params *V2SearchCompaniesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// V2ApplyCompanyWithBody Pick a Companies House company
+	//
+	// Fills the registered name, company number and registered office address from Companies House, and locks the name and address. The country becomes GB.
+	//
+	// Takes any type of body and a specified content type.
+	//
+	// Corresponds with POST /v2/business-profile/company (the `V2ApplyCompany` operationId).
+	V2ApplyCompanyWithBody(ctx context.Context, params *V2ApplyCompanyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// V2ApplyCompany Pick a Companies House company
+	//
+	// Fills the registered name, company number and registered office address from Companies House, and locks the name and address. The country becomes GB.
+	//
+	// Takes a body of the `application/json` content type.
+	//
+	// Corresponds with POST /v2/business-profile/company (the `V2ApplyCompany` operationId).
+	V2ApplyCompany(ctx context.Context, params *V2ApplyCompanyParams, body V2ApplyCompanyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// V2SubmitBusinessProfile Submit the business profile
+	//
+	// Sends the business profile for review. Held sender names are released for approval once it is verified. Takes no body.
+	//
+	// Corresponds with POST /v2/business-profile/submit (the `V2SubmitBusinessProfile` operationId).
+	V2SubmitBusinessProfile(ctx context.Context, params *V2SubmitBusinessProfileParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// V2ListContactLists List contact lists
 	//
@@ -5399,6 +5741,133 @@ func (c *Client) V2RotateApiKey(ctx context.Context, id string, params *V2Rotate
 // Corresponds with POST /v2/api-keys/{id}/rotate-signing-secret (the `V2RotateSigningSecret` operationId).
 func (c *Client) V2RotateSigningSecret(ctx context.Context, id string, params *V2RotateSigningSecretParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewV2RotateSigningSecretRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// V2GetBusinessProfile Get the business profile
+//
+// Returns the workspace's own business profile, starting an empty draft if there is none yet. Sender names are held until it is verified. The missing list says what still has to be provided before it can be submitted.
+//
+// Corresponds with GET /v2/business-profile (the `V2GetBusinessProfile` operationId).
+func (c *Client) V2GetBusinessProfile(ctx context.Context, params *V2GetBusinessProfileParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewV2GetBusinessProfileRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// V2UpdateBusinessProfileWithBody Update the business profile
+//
+// Changes the fields given and leaves the rest as they are. Once the profile is submitted or verified only contactEmail, contactPhone and contentUrlsAndNumbers still change; the other fields are ignored. A name filled from Companies House cannot be changed.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with PATCH /v2/business-profile (the `V2UpdateBusinessProfile` operationId).
+func (c *Client) V2UpdateBusinessProfileWithBody(ctx context.Context, params *V2UpdateBusinessProfileParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewV2UpdateBusinessProfileRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// V2UpdateBusinessProfile Update the business profile
+//
+// Changes the fields given and leaves the rest as they are. Once the profile is submitted or verified only contactEmail, contactPhone and contentUrlsAndNumbers still change; the other fields are ignored. A name filled from Companies House cannot be changed.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with PATCH /v2/business-profile (the `V2UpdateBusinessProfile` operationId).
+func (c *Client) V2UpdateBusinessProfile(ctx context.Context, params *V2UpdateBusinessProfileParams, body V2UpdateBusinessProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewV2UpdateBusinessProfileRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// V2SearchCompanies Search Companies House
+//
+// Finds UK companies by name on the Companies House register, up to five. Pick one with the company endpoint to fill in the registered name, number and address. A UK limited company or PLC must be picked this way before it can be submitted.
+//
+// Corresponds with GET /v2/business-profile/companies (the `V2SearchCompanies` operationId).
+func (c *Client) V2SearchCompanies(ctx context.Context, params *V2SearchCompaniesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewV2SearchCompaniesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// V2ApplyCompanyWithBody Pick a Companies House company
+//
+// Fills the registered name, company number and registered office address from Companies House, and locks the name and address. The country becomes GB.
+//
+// Takes any type of body and a specified content type.
+//
+// Corresponds with POST /v2/business-profile/company (the `V2ApplyCompany` operationId).
+func (c *Client) V2ApplyCompanyWithBody(ctx context.Context, params *V2ApplyCompanyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewV2ApplyCompanyRequestWithBody(c.Server, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// V2ApplyCompany Pick a Companies House company
+//
+// Fills the registered name, company number and registered office address from Companies House, and locks the name and address. The country becomes GB.
+//
+// Takes a body of the `application/json` content type.
+//
+// Corresponds with POST /v2/business-profile/company (the `V2ApplyCompany` operationId).
+func (c *Client) V2ApplyCompany(ctx context.Context, params *V2ApplyCompanyParams, body V2ApplyCompanyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewV2ApplyCompanyRequest(c.Server, params, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// V2SubmitBusinessProfile Submit the business profile
+//
+// Sends the business profile for review. Held sender names are released for approval once it is verified. Takes no body.
+//
+// Corresponds with POST /v2/business-profile/submit (the `V2SubmitBusinessProfile` operationId).
+func (c *Client) V2SubmitBusinessProfile(ctx context.Context, params *V2SubmitBusinessProfileParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewV2SubmitBusinessProfileRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -7851,6 +8320,298 @@ func NewV2RotateSigningSecretRequest(server string, id string, params *V2RotateS
 	}
 
 	operationPath := fmt.Sprintf("/v2/api-keys/%s/rotate-signing-secret", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.ConnectVersion != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Connect-Version", *params.ConnectVersion, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Connect-Version", headerParam0)
+		}
+
+		if params.IdempotencyKey != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", *params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Idempotency-Key", headerParam1)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewV2GetBusinessProfileRequest constructs an http.Request for the V2GetBusinessProfile method
+func NewV2GetBusinessProfileRequest(server string, params *V2GetBusinessProfileParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v2/business-profile")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.ConnectVersion != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Connect-Version", *params.ConnectVersion, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Connect-Version", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewV2UpdateBusinessProfileRequest calls the generic V2UpdateBusinessProfile builder with application/json body
+func NewV2UpdateBusinessProfileRequest(server string, params *V2UpdateBusinessProfileParams, body V2UpdateBusinessProfileJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewV2UpdateBusinessProfileRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewV2UpdateBusinessProfileRequestWithBody constructs an http.Request for the V2UpdateBusinessProfile method, with any body, and a specified content type
+func NewV2UpdateBusinessProfileRequestWithBody(server string, params *V2UpdateBusinessProfileParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v2/business-profile")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPatch, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.ConnectVersion != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Connect-Version", *params.ConnectVersion, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Connect-Version", headerParam0)
+		}
+
+		if params.IdempotencyKey != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", *params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Idempotency-Key", headerParam1)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewV2SearchCompaniesRequest constructs an http.Request for the V2SearchCompanies method
+func NewV2SearchCompaniesRequest(server string, params *V2SearchCompaniesParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v2/business-profile/companies")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if queryFrag, err := runtime.StyleParamWithOptions("form", true, "q", params.Q, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			return nil, err
+		} else {
+			for _, qp := range strings.Split(queryFrag, "&") {
+				rawQueryFragments = append(rawQueryFragments, qp)
+			}
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.ConnectVersion != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Connect-Version", *params.ConnectVersion, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Connect-Version", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewV2ApplyCompanyRequest calls the generic V2ApplyCompany builder with application/json body
+func NewV2ApplyCompanyRequest(server string, params *V2ApplyCompanyParams, body V2ApplyCompanyJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewV2ApplyCompanyRequestWithBody(server, params, "application/json", bodyReader)
+}
+
+// NewV2ApplyCompanyRequestWithBody constructs an http.Request for the V2ApplyCompany method, with any body, and a specified content type
+func NewV2ApplyCompanyRequestWithBody(server string, params *V2ApplyCompanyParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v2/business-profile/company")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	if params != nil {
+
+		if params.ConnectVersion != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Connect-Version", *params.ConnectVersion, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Connect-Version", headerParam0)
+		}
+
+		if params.IdempotencyKey != nil {
+			var headerParam1 string
+
+			headerParam1, err = runtime.StyleParamWithOptions("simple", false, "Idempotency-Key", *params.IdempotencyKey, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Idempotency-Key", headerParam1)
+		}
+
+	}
+
+	return req, nil
+}
+
+// NewV2SubmitBusinessProfileRequest constructs an http.Request for the V2SubmitBusinessProfile method
+func NewV2SubmitBusinessProfileRequest(server string, params *V2SubmitBusinessProfileParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v2/business-profile/submit")
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -14055,6 +14816,69 @@ type ClientWithResponsesInterface interface {
 	// Corresponds with POST /v2/api-keys/{id}/rotate-signing-secret (the `V2RotateSigningSecret` operationId).
 	V2RotateSigningSecretWithResponse(ctx context.Context, id string, params *V2RotateSigningSecretParams, reqEditors ...RequestEditorFn) (*V2RotateSigningSecretResult, error)
 
+	// V2GetBusinessProfileWithResponse Get the business profile
+	//
+	// Returns the workspace's own business profile, starting an empty draft if there is none yet. Sender names are held until it is verified. The missing list says what still has to be provided before it can be submitted.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v2/business-profile (the `V2GetBusinessProfile` operationId).
+	V2GetBusinessProfileWithResponse(ctx context.Context, params *V2GetBusinessProfileParams, reqEditors ...RequestEditorFn) (*V2GetBusinessProfileResult, error)
+
+	// V2UpdateBusinessProfileWithBodyWithResponse Update the business profile
+	//
+	// Changes the fields given and leaves the rest as they are. Once the profile is submitted or verified only contactEmail, contactPhone and contentUrlsAndNumbers still change; the other fields are ignored. A name filled from Companies House cannot be changed.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v2/business-profile (the `V2UpdateBusinessProfile` operationId).
+	V2UpdateBusinessProfileWithBodyWithResponse(ctx context.Context, params *V2UpdateBusinessProfileParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*V2UpdateBusinessProfileResult, error)
+
+	// V2UpdateBusinessProfileWithResponse Update the business profile
+	//
+	// Changes the fields given and leaves the rest as they are. Once the profile is submitted or verified only contactEmail, contactPhone and contentUrlsAndNumbers still change; the other fields are ignored. A name filled from Companies House cannot be changed.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with PATCH /v2/business-profile (the `V2UpdateBusinessProfile` operationId).
+	V2UpdateBusinessProfileWithResponse(ctx context.Context, params *V2UpdateBusinessProfileParams, body V2UpdateBusinessProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*V2UpdateBusinessProfileResult, error)
+
+	// V2SearchCompaniesWithResponse Search Companies House
+	//
+	// Finds UK companies by name on the Companies House register, up to five. Pick one with the company endpoint to fill in the registered name, number and address. A UK limited company or PLC must be picked this way before it can be submitted.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v2/business-profile/companies (the `V2SearchCompanies` operationId).
+	V2SearchCompaniesWithResponse(ctx context.Context, params *V2SearchCompaniesParams, reqEditors ...RequestEditorFn) (*V2SearchCompaniesResult, error)
+
+	// V2ApplyCompanyWithBodyWithResponse Pick a Companies House company
+	//
+	// Fills the registered name, company number and registered office address from Companies House, and locks the name and address. The country becomes GB.
+	//
+	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v2/business-profile/company (the `V2ApplyCompany` operationId).
+	V2ApplyCompanyWithBodyWithResponse(ctx context.Context, params *V2ApplyCompanyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*V2ApplyCompanyResult, error)
+
+	// V2ApplyCompanyWithResponse Pick a Companies House company
+	//
+	// Fills the registered name, company number and registered office address from Companies House, and locks the name and address. The country becomes GB.
+	//
+	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v2/business-profile/company (the `V2ApplyCompany` operationId).
+	V2ApplyCompanyWithResponse(ctx context.Context, params *V2ApplyCompanyParams, body V2ApplyCompanyJSONRequestBody, reqEditors ...RequestEditorFn) (*V2ApplyCompanyResult, error)
+
+	// V2SubmitBusinessProfileWithResponse Submit the business profile
+	//
+	// Sends the business profile for review. Held sender names are released for approval once it is verified. Takes no body.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with POST /v2/business-profile/submit (the `V2SubmitBusinessProfile` operationId).
+	V2SubmitBusinessProfileWithResponse(ctx context.Context, params *V2SubmitBusinessProfileParams, reqEditors ...RequestEditorFn) (*V2SubmitBusinessProfileResult, error)
+
 	// V2ListContactListsWithResponse List contact lists
 	//
 	// Your contact lists, newest first. Paginated with cursor.
@@ -15689,6 +16513,421 @@ func (r V2RotateSigningSecretResult) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r V2RotateSigningSecretResult) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type V2GetBusinessProfileResult struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BusinessProfileV2Dto
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *V2ProblemDetails
+	// ApplicationproblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationproblemJSON401 *V2ProblemDetails
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *V2ProblemDetails
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *V2ProblemDetails
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r V2GetBusinessProfileResult) GetJSON200() *BusinessProfileV2Dto {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r V2GetBusinessProfileResult) GetApplicationproblemJSON400() *V2ProblemDetails {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON401 returns the response for an HTTP 401 `application/problem+json` response
+func (r V2GetBusinessProfileResult) GetApplicationproblemJSON401() *V2ProblemDetails {
+	return r.ApplicationproblemJSON401
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r V2GetBusinessProfileResult) GetApplicationproblemJSON403() *V2ProblemDetails {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r V2GetBusinessProfileResult) GetApplicationproblemJSON503() *V2ProblemDetails {
+	return r.ApplicationproblemJSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r V2GetBusinessProfileResult) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r V2GetBusinessProfileResult) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r V2GetBusinessProfileResult) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r V2GetBusinessProfileResult) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type V2UpdateBusinessProfileResult struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BusinessProfileV2Dto
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *V2ProblemDetails
+	// ApplicationproblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationproblemJSON401 *V2ProblemDetails
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *V2ProblemDetails
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *V2ProblemDetails
+	// ApplicationproblemJSON422 the response for an HTTP 422 `application/problem+json` response
+	ApplicationproblemJSON422 *V2ProblemDetails
+	// ApplicationproblemJSON428 the response for an HTTP 428 `application/problem+json` response
+	ApplicationproblemJSON428 *V2ProblemDetails
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *V2ProblemDetails
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r V2UpdateBusinessProfileResult) GetJSON200() *BusinessProfileV2Dto {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r V2UpdateBusinessProfileResult) GetApplicationproblemJSON400() *V2ProblemDetails {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON401 returns the response for an HTTP 401 `application/problem+json` response
+func (r V2UpdateBusinessProfileResult) GetApplicationproblemJSON401() *V2ProblemDetails {
+	return r.ApplicationproblemJSON401
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r V2UpdateBusinessProfileResult) GetApplicationproblemJSON403() *V2ProblemDetails {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r V2UpdateBusinessProfileResult) GetApplicationproblemJSON409() *V2ProblemDetails {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSON422 returns the response for an HTTP 422 `application/problem+json` response
+func (r V2UpdateBusinessProfileResult) GetApplicationproblemJSON422() *V2ProblemDetails {
+	return r.ApplicationproblemJSON422
+}
+
+// GetApplicationproblemJSON428 returns the response for an HTTP 428 `application/problem+json` response
+func (r V2UpdateBusinessProfileResult) GetApplicationproblemJSON428() *V2ProblemDetails {
+	return r.ApplicationproblemJSON428
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r V2UpdateBusinessProfileResult) GetApplicationproblemJSON503() *V2ProblemDetails {
+	return r.ApplicationproblemJSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r V2UpdateBusinessProfileResult) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r V2UpdateBusinessProfileResult) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r V2UpdateBusinessProfileResult) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r V2UpdateBusinessProfileResult) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type V2SearchCompaniesResult struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *ListResponseOfCompanyMatchDto
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *V2ProblemDetails
+	// ApplicationproblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationproblemJSON401 *V2ProblemDetails
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *V2ProblemDetails
+	// ApplicationproblemJSON429 the response for an HTTP 429 `application/problem+json` response
+	ApplicationproblemJSON429 *V2ProblemDetails
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *V2ProblemDetails
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r V2SearchCompaniesResult) GetJSON200() *ListResponseOfCompanyMatchDto {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r V2SearchCompaniesResult) GetApplicationproblemJSON400() *V2ProblemDetails {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON401 returns the response for an HTTP 401 `application/problem+json` response
+func (r V2SearchCompaniesResult) GetApplicationproblemJSON401() *V2ProblemDetails {
+	return r.ApplicationproblemJSON401
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r V2SearchCompaniesResult) GetApplicationproblemJSON403() *V2ProblemDetails {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON429 returns the response for an HTTP 429 `application/problem+json` response
+func (r V2SearchCompaniesResult) GetApplicationproblemJSON429() *V2ProblemDetails {
+	return r.ApplicationproblemJSON429
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r V2SearchCompaniesResult) GetApplicationproblemJSON503() *V2ProblemDetails {
+	return r.ApplicationproblemJSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r V2SearchCompaniesResult) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r V2SearchCompaniesResult) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r V2SearchCompaniesResult) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r V2SearchCompaniesResult) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type V2ApplyCompanyResult struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BusinessProfileV2Dto
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *V2ProblemDetails
+	// ApplicationproblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationproblemJSON401 *V2ProblemDetails
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *V2ProblemDetails
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *V2ProblemDetails
+	// ApplicationproblemJSON422 the response for an HTTP 422 `application/problem+json` response
+	ApplicationproblemJSON422 *V2ProblemDetails
+	// ApplicationproblemJSON428 the response for an HTTP 428 `application/problem+json` response
+	ApplicationproblemJSON428 *V2ProblemDetails
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *V2ProblemDetails
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r V2ApplyCompanyResult) GetJSON200() *BusinessProfileV2Dto {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r V2ApplyCompanyResult) GetApplicationproblemJSON400() *V2ProblemDetails {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON401 returns the response for an HTTP 401 `application/problem+json` response
+func (r V2ApplyCompanyResult) GetApplicationproblemJSON401() *V2ProblemDetails {
+	return r.ApplicationproblemJSON401
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r V2ApplyCompanyResult) GetApplicationproblemJSON403() *V2ProblemDetails {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r V2ApplyCompanyResult) GetApplicationproblemJSON409() *V2ProblemDetails {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSON422 returns the response for an HTTP 422 `application/problem+json` response
+func (r V2ApplyCompanyResult) GetApplicationproblemJSON422() *V2ProblemDetails {
+	return r.ApplicationproblemJSON422
+}
+
+// GetApplicationproblemJSON428 returns the response for an HTTP 428 `application/problem+json` response
+func (r V2ApplyCompanyResult) GetApplicationproblemJSON428() *V2ProblemDetails {
+	return r.ApplicationproblemJSON428
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r V2ApplyCompanyResult) GetApplicationproblemJSON503() *V2ProblemDetails {
+	return r.ApplicationproblemJSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r V2ApplyCompanyResult) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r V2ApplyCompanyResult) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r V2ApplyCompanyResult) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r V2ApplyCompanyResult) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type V2SubmitBusinessProfileResult struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *BusinessProfileV2Dto
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *V2ProblemDetails
+	// ApplicationproblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationproblemJSON401 *V2ProblemDetails
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *V2ProblemDetails
+	// ApplicationproblemJSON409 the response for an HTTP 409 `application/problem+json` response
+	ApplicationproblemJSON409 *V2ProblemDetails
+	// ApplicationproblemJSON422 the response for an HTTP 422 `application/problem+json` response
+	ApplicationproblemJSON422 *V2ProblemDetails
+	// ApplicationproblemJSON428 the response for an HTTP 428 `application/problem+json` response
+	ApplicationproblemJSON428 *V2ProblemDetails
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *V2ProblemDetails
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r V2SubmitBusinessProfileResult) GetJSON200() *BusinessProfileV2Dto {
+	return r.JSON200
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r V2SubmitBusinessProfileResult) GetApplicationproblemJSON400() *V2ProblemDetails {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON401 returns the response for an HTTP 401 `application/problem+json` response
+func (r V2SubmitBusinessProfileResult) GetApplicationproblemJSON401() *V2ProblemDetails {
+	return r.ApplicationproblemJSON401
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r V2SubmitBusinessProfileResult) GetApplicationproblemJSON403() *V2ProblemDetails {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON409 returns the response for an HTTP 409 `application/problem+json` response
+func (r V2SubmitBusinessProfileResult) GetApplicationproblemJSON409() *V2ProblemDetails {
+	return r.ApplicationproblemJSON409
+}
+
+// GetApplicationproblemJSON422 returns the response for an HTTP 422 `application/problem+json` response
+func (r V2SubmitBusinessProfileResult) GetApplicationproblemJSON422() *V2ProblemDetails {
+	return r.ApplicationproblemJSON422
+}
+
+// GetApplicationproblemJSON428 returns the response for an HTTP 428 `application/problem+json` response
+func (r V2SubmitBusinessProfileResult) GetApplicationproblemJSON428() *V2ProblemDetails {
+	return r.ApplicationproblemJSON428
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r V2SubmitBusinessProfileResult) GetApplicationproblemJSON503() *V2ProblemDetails {
+	return r.ApplicationproblemJSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r V2SubmitBusinessProfileResult) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r V2SubmitBusinessProfileResult) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r V2SubmitBusinessProfileResult) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r V2SubmitBusinessProfileResult) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -22882,6 +24121,111 @@ func (c *ClientWithResponses) V2RotateSigningSecretWithResponse(ctx context.Cont
 	return ParseV2RotateSigningSecretResult(rsp)
 }
 
+// V2GetBusinessProfileWithResponse Get the business profile
+//
+// Returns the workspace's own business profile, starting an empty draft if there is none yet. Sender names are held until it is verified. The missing list says what still has to be provided before it can be submitted.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v2/business-profile (the `V2GetBusinessProfile` operationId).
+func (c *ClientWithResponses) V2GetBusinessProfileWithResponse(ctx context.Context, params *V2GetBusinessProfileParams, reqEditors ...RequestEditorFn) (*V2GetBusinessProfileResult, error) {
+	rsp, err := c.V2GetBusinessProfile(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseV2GetBusinessProfileResult(rsp)
+}
+
+// V2UpdateBusinessProfileWithBodyWithResponse Update the business profile
+//
+// Changes the fields given and leaves the rest as they are. Once the profile is submitted or verified only contactEmail, contactPhone and contentUrlsAndNumbers still change; the other fields are ignored. A name filled from Companies House cannot be changed.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v2/business-profile (the `V2UpdateBusinessProfile` operationId).
+func (c *ClientWithResponses) V2UpdateBusinessProfileWithBodyWithResponse(ctx context.Context, params *V2UpdateBusinessProfileParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*V2UpdateBusinessProfileResult, error) {
+	rsp, err := c.V2UpdateBusinessProfileWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseV2UpdateBusinessProfileResult(rsp)
+}
+
+// V2UpdateBusinessProfileWithResponse Update the business profile
+//
+// Changes the fields given and leaves the rest as they are. Once the profile is submitted or verified only contactEmail, contactPhone and contentUrlsAndNumbers still change; the other fields are ignored. A name filled from Companies House cannot be changed.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with PATCH /v2/business-profile (the `V2UpdateBusinessProfile` operationId).
+func (c *ClientWithResponses) V2UpdateBusinessProfileWithResponse(ctx context.Context, params *V2UpdateBusinessProfileParams, body V2UpdateBusinessProfileJSONRequestBody, reqEditors ...RequestEditorFn) (*V2UpdateBusinessProfileResult, error) {
+	rsp, err := c.V2UpdateBusinessProfile(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseV2UpdateBusinessProfileResult(rsp)
+}
+
+// V2SearchCompaniesWithResponse Search Companies House
+//
+// Finds UK companies by name on the Companies House register, up to five. Pick one with the company endpoint to fill in the registered name, number and address. A UK limited company or PLC must be picked this way before it can be submitted.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v2/business-profile/companies (the `V2SearchCompanies` operationId).
+func (c *ClientWithResponses) V2SearchCompaniesWithResponse(ctx context.Context, params *V2SearchCompaniesParams, reqEditors ...RequestEditorFn) (*V2SearchCompaniesResult, error) {
+	rsp, err := c.V2SearchCompanies(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseV2SearchCompaniesResult(rsp)
+}
+
+// V2ApplyCompanyWithBodyWithResponse Pick a Companies House company
+//
+// Fills the registered name, company number and registered office address from Companies House, and locks the name and address. The country becomes GB.
+//
+// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v2/business-profile/company (the `V2ApplyCompany` operationId).
+func (c *ClientWithResponses) V2ApplyCompanyWithBodyWithResponse(ctx context.Context, params *V2ApplyCompanyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*V2ApplyCompanyResult, error) {
+	rsp, err := c.V2ApplyCompanyWithBody(ctx, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseV2ApplyCompanyResult(rsp)
+}
+
+// V2ApplyCompanyWithResponse Pick a Companies House company
+//
+// Fills the registered name, company number and registered office address from Companies House, and locks the name and address. The country becomes GB.
+//
+// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v2/business-profile/company (the `V2ApplyCompany` operationId).
+func (c *ClientWithResponses) V2ApplyCompanyWithResponse(ctx context.Context, params *V2ApplyCompanyParams, body V2ApplyCompanyJSONRequestBody, reqEditors ...RequestEditorFn) (*V2ApplyCompanyResult, error) {
+	rsp, err := c.V2ApplyCompany(ctx, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseV2ApplyCompanyResult(rsp)
+}
+
+// V2SubmitBusinessProfileWithResponse Submit the business profile
+//
+// Sends the business profile for review. Held sender names are released for approval once it is verified. Takes no body.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with POST /v2/business-profile/submit (the `V2SubmitBusinessProfile` operationId).
+func (c *ClientWithResponses) V2SubmitBusinessProfileWithResponse(ctx context.Context, params *V2SubmitBusinessProfileParams, reqEditors ...RequestEditorFn) (*V2SubmitBusinessProfileResult, error) {
+	rsp, err := c.V2SubmitBusinessProfile(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseV2SubmitBusinessProfileResult(rsp)
+}
+
 // V2ListContactListsWithResponse List contact lists
 //
 // Your contact lists, newest first. Paginated with cursor.
@@ -25081,6 +26425,346 @@ func ParseV2RotateSigningSecretResult(rsp *http.Response) (*V2RotateSigningSecre
 			return nil, err
 		}
 		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseV2GetBusinessProfileResult parses an HTTP response from a V2GetBusinessProfileWithResponse call
+func ParseV2GetBusinessProfileResult(rsp *http.Response) (*V2GetBusinessProfileResult, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &V2GetBusinessProfileResult{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BusinessProfileV2Dto
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseV2UpdateBusinessProfileResult parses an HTTP response from a V2UpdateBusinessProfileWithResponse call
+func ParseV2UpdateBusinessProfileResult(rsp *http.Response) (*V2UpdateBusinessProfileResult, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &V2UpdateBusinessProfileResult{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BusinessProfileV2Dto
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseV2SearchCompaniesResult parses an HTTP response from a V2SearchCompaniesWithResponse call
+func ParseV2SearchCompaniesResult(rsp *http.Response) (*V2SearchCompaniesResult, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &V2SearchCompaniesResult{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ListResponseOfCompanyMatchDto
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON429 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseV2ApplyCompanyResult parses an HTTP response from a V2ApplyCompanyWithResponse call
+func ParseV2ApplyCompanyResult(rsp *http.Response) (*V2ApplyCompanyResult, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &V2ApplyCompanyResult{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BusinessProfileV2Dto
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON409 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON422 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 428:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON428 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseV2SubmitBusinessProfileResult parses an HTTP response from a V2SubmitBusinessProfileWithResponse call
+func ParseV2SubmitBusinessProfileResult(rsp *http.Response) (*V2SubmitBusinessProfileResult, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &V2SubmitBusinessProfileResult{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest BusinessProfileV2Dto
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
 		var dest V2ProblemDetails

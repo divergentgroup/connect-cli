@@ -72,6 +72,18 @@ Lists are cursor paged: `--limit` (1 to 200, default 50) sets the page size, and
 the CLI prints the `--cursor` value to pass on stderr. Enum values are snake_case, as in the API.
 Simulator handsets: `+447700900001` delivers, `+447700900002` fails, `+447700900003` replies.
 
+### Business details
+
+Sender names are approved once your business is verified, so submit its profile after signing up.
+
+```sh
+connect business show                                                    # status, what is missing, held sender requests
+connect business companies "Acme Trading"                                # search Companies House
+connect business company 01234567                                        # use that company (fills and locks its registered details)
+connect business set --legal-form sole_trader --address "1 Anvil Way" --city London --postcode "EC1A 1AA" --contact-phone +447700900123 --use-case alerts --content-links none
+connect business submit                                                  # the Connect team reviews it, then held sender requests are released
+```
+
 ### Forward events to a local server
 
 ```sh

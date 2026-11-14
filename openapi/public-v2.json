@@ -5005,6 +5005,548 @@
         ]
       }
     },
+    "/v2/business-profile/company": {
+      "post": {
+        "tags": [
+          "Business Profile"
+        ],
+        "summary": "Pick a Companies House company",
+        "description": "Fills the registered name, company number and registered office address from Companies House, and locks the name and address. The country becomes GB.",
+        "operationId": "V2ApplyCompany",
+        "parameters": [
+          {
+            "name": "Connect-Version",
+            "in": "header",
+            "description": "The API version to use, for example 2026-10-01. Defaults to the version set on your API key.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "A unique value of up to 255 characters, so a retried request is not acted on twice. Required for keys in Strict API Mode.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "x-name": "ApplyCompanyV2Request",
+          "description": "The Companies House company to use.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyCompanyV2Request"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "400": {
+            "description": "The request is not valid, or Companies House has no company with that number.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key or bearer token is missing or not valid, or the request signature could not be verified.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is not allowed to do this. Changing the business profile needs a workspace owner or admin.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable. Retry after the Retry-After header.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The profile has been submitted or verified and can no longer be changed, or a request with this Idempotency-Key is still being processed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "This Idempotency-Key was already used for a different request. Use a new key.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "This API key requires an Idempotency-Key header on every POST and PATCH.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "The updated business profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessProfileV2Dto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v2/business-profile": {
+      "get": {
+        "tags": [
+          "Business Profile"
+        ],
+        "summary": "Get the business profile",
+        "description": "Returns the workspace's own business profile, starting an empty draft if there is none yet. Sender names are held until it is verified. The missing list says what still has to be provided before it can be submitted.",
+        "operationId": "V2GetBusinessProfile",
+        "parameters": [
+          {
+            "name": "Connect-Version",
+            "in": "header",
+            "description": "The API version to use, for example 2026-10-01. Defaults to the version set on your API key.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "The request is not valid. The detail field says why, and errors lists any problems by field name.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key or bearer token is missing or not valid, or the request signature could not be verified.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is not allowed to do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable. Retry after the Retry-After header.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "The business profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessProfileV2Dto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "Business Profile"
+        ],
+        "summary": "Update the business profile",
+        "description": "Changes the fields given and leaves the rest as they are. Once the profile is submitted or verified only contactEmail, contactPhone and contentUrlsAndNumbers still change; the other fields are ignored. A name filled from Companies House cannot be changed.",
+        "operationId": "V2UpdateBusinessProfile",
+        "parameters": [
+          {
+            "name": "Connect-Version",
+            "in": "header",
+            "description": "The API version to use, for example 2026-10-01. Defaults to the version set on your API key.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "A unique value of up to 255 characters, so a retried request is not acted on twice. Required for keys in Strict API Mode.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "x-name": "UpdateBusinessProfileV2Request",
+          "description": "The business profile fields to change. A field that is omitted or null is left as it is.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBusinessProfileV2Request"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "400": {
+            "description": "The request is not valid. The detail field says why, and errors lists any problems by field name.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key or bearer token is missing or not valid, or the request signature could not be verified.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is not allowed to do this. Changing the business profile needs a workspace owner or admin.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable. Retry after the Retry-After header.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "A request with this Idempotency-Key is still being processed. Retry after the Retry-After header.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "This Idempotency-Key was already used for a different request. Use a new key.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "This API key requires an Idempotency-Key header on every POST and PATCH.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "The updated business profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessProfileV2Dto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v2/business-profile/companies": {
+      "get": {
+        "tags": [
+          "Business Profile"
+        ],
+        "summary": "Search Companies House",
+        "description": "Finds UK companies by name on the Companies House register, up to five. Pick one with the company endpoint to fill in the registered name, number and address. A UK limited company or PLC must be picked this way before it can be submitted.",
+        "operationId": "V2SearchCompanies",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "The company name to search for, 2 to 128 characters.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Connect-Version",
+            "in": "header",
+            "description": "The API version to use, for example 2026-10-01. Defaults to the version set on your API key.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "429": {
+            "description": "Too many searches. Retry after the Retry-After header.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. The detail field says why, and errors lists any problems by field name.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key or bearer token is missing or not valid, or the request signature could not be verified.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is not allowed to do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable. Retry after the Retry-After header.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "The matching companies. The list is never paged, so nextCursor is always null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListResponseOfCompanyMatchDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/v2/business-profile/submit": {
+      "post": {
+        "tags": [
+          "Business Profile"
+        ],
+        "summary": "Submit the business profile",
+        "description": "Sends the business profile for review. Held sender names are released for approval once it is verified. Takes no body.",
+        "operationId": "V2SubmitBusinessProfile",
+        "parameters": [
+          {
+            "name": "Connect-Version",
+            "in": "header",
+            "description": "The API version to use, for example 2026-10-01. Defaults to the version set on your API key.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "A unique value of up to 255 characters, so a retried request is not acted on twice. Required for keys in Strict API Mode.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "The profile is not complete. errors lists each missing field, as in the missing list of the profile.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key or bearer token is missing or not valid, or the request signature could not be verified.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is not allowed to do this. Submitting the business profile needs a workspace owner or admin.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable. Retry after the Retry-After header.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "The profile is already under review or verified, or a request with this Idempotency-Key is still being processed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "This Idempotency-Key was already used for a different request. Use a new key.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "428": {
+            "description": "This API key requires an Idempotency-Key header on every POST and PATCH.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "The submitted business profile, with status pending_review (or verified when the workspace needs no review).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BusinessProfileV2Dto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
     "/v2/sms/{id}/events": {
       "get": {
         "tags": [
@@ -10839,7 +11381,8 @@
           "apiOnlyMode",
           "sending",
           "country",
-          "createdAt"
+          "createdAt",
+          "testNumbers"
         ],
         "properties": {
           "id": {
@@ -10880,6 +11423,13 @@
             "type": "string",
             "description": "When (UTC) the workspace was created.",
             "format": "date-time"
+          },
+          "testNumbers": {
+            "type": "array",
+            "description": "Your verified SMS test numbers (E.164), which test-mode sends may reach. Empty when the caller may not see recipients.",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -13893,6 +14443,346 @@
           "fortnightly"
         ]
       },
+      "BusinessProfileV2Dto": {
+        "type": "object",
+        "description": "The business behind the workspace. Sender names are held until it is verified.",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "status",
+          "country",
+          "registryLocked",
+          "heldRequests",
+          "identityVerificationRequired",
+          "missing",
+          "dashboardUrl"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The unique id of the business profile."
+          },
+          "status": {
+            "$ref": "#/components/schemas/BusinessProfileV2Status",
+            "description": "The verification status."
+          },
+          "legalName": {
+            "type": "string",
+            "description": "The registered or trading name of the business, or null when not given.",
+            "nullable": true
+          },
+          "legalForm": {
+            "$ref": "#/components/schemas/BusinessLegalForm",
+            "description": "The legal form of the business, or null when not given."
+          },
+          "country": {
+            "type": "string",
+            "description": "The country the business is registered in, as an ISO 3166-1 alpha-2 code."
+          },
+          "addressLine": {
+            "type": "string",
+            "description": "The first line of the business address, or null when not given.",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "description": "The town or city, or null when not given.",
+            "nullable": true
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "The postal code, or null when not given.",
+            "nullable": true
+          },
+          "website": {
+            "type": "string",
+            "description": "The business website or public page, or null when not given. Not required for a sole trader.",
+            "nullable": true
+          },
+          "contactEmail": {
+            "type": "string",
+            "description": "The email address to contact the business about verification, or null when not given.",
+            "nullable": true
+          },
+          "contactPhone": {
+            "type": "string",
+            "description": "The contact phone number in international format (for example +447700900123), or null when not given.",
+            "nullable": true
+          },
+          "useCase": {
+            "$ref": "#/components/schemas/BusinessUseCase",
+            "description": "What the messages are for, or null when not given."
+          },
+          "contentUrlsAndNumbers": {
+            "type": "string",
+            "description": "The links and phone numbers the messages will contain, or \"none\". Null when not given.",
+            "nullable": true
+          },
+          "registrationNumber": {
+            "type": "string",
+            "description": "The Companies House number, set by picking a company. Null otherwise.",
+            "nullable": true
+          },
+          "vatNumber": {
+            "type": "string",
+            "description": "The EU VAT number confirmed with VIES, or null. It can only be entered in the dashboard.",
+            "nullable": true
+          },
+          "registryLocked": {
+            "type": "boolean",
+            "description": "True when a register (Companies House or VIES) supplied the name and address, which can then no longer be changed."
+          },
+          "rejectionReason": {
+            "type": "string",
+            "description": "Why the profile was rejected, or null.",
+            "nullable": true
+          },
+          "heldRequests": {
+            "type": "integer",
+            "description": "How many sender and number requests are waiting for this profile to be verified.",
+            "format": "int32"
+          },
+          "identityVerificationRequired": {
+            "type": "boolean",
+            "description": "True when the person must verify their identity before submitting. That is done only in the dashboard, at dashboardUrl."
+          },
+          "missing": {
+            "type": "array",
+            "description": "What still has to be provided before the profile can be submitted. Empty when it is complete or can no longer be changed.",
+            "items": {
+              "$ref": "#/components/schemas/BusinessProfileMissingFieldDto"
+            }
+          },
+          "dashboardUrl": {
+            "type": "string",
+            "description": "The dashboard page where a person can finish anything this API cannot do, such as identity verification, documents or a VAT number."
+          }
+        }
+      },
+      "BusinessProfileV2Status": {
+        "type": "string",
+        "description": "The verification status of the business profile: draft (still being filled in), pending_review (submitted and waiting for review), verified, or rejected (see rejectionReason; fix it and submit again).",
+        "x-enumNames": [
+          "draft",
+          "pending_review",
+          "verified",
+          "rejected"
+        ],
+        "enum": [
+          "draft",
+          "pending_review",
+          "verified",
+          "rejected"
+        ]
+      },
+      "BusinessLegalForm": {
+        "type": "string",
+        "description": "The legal form of the business: limited_company (a private limited company, such as a UK Ltd), public_company (a public limited company, such as a UK PLC), sole_trader (a person trading in their own name), partnership, non_profit (a charity or other non-profit) or other.",
+        "x-enumNames": [
+          "limited_company",
+          "public_company",
+          "sole_trader",
+          "partnership",
+          "non_profit",
+          "other"
+        ],
+        "enum": [
+          "limited_company",
+          "public_company",
+          "sole_trader",
+          "partnership",
+          "non_profit",
+          "other"
+        ]
+      },
+      "BusinessUseCase": {
+        "type": "string",
+        "description": "What the messages are for: marketing (offers and promotions), alerts (notifications, reminders and updates), authentication (one-time passcodes), conversations (two-way messaging with customers) or other.",
+        "x-enumNames": [
+          "marketing",
+          "alerts",
+          "authentication",
+          "conversations",
+          "other"
+        ],
+        "enum": [
+          "marketing",
+          "alerts",
+          "authentication",
+          "conversations",
+          "other"
+        ]
+      },
+      "BusinessProfileMissingFieldDto": {
+        "type": "object",
+        "description": "A field that still needs an answer before the profile can be submitted.",
+        "additionalProperties": false,
+        "required": [
+          "field",
+          "message"
+        ],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The field, named as on the business profile (for example legalForm or contactPhone). registrationNumber is filled by picking a company, vatNumber and identityVerification only in the dashboard."
+          },
+          "message": {
+            "type": "string",
+            "description": "What to provide, in words a person can act on."
+          }
+        }
+      },
+      "ApplyCompanyV2Request": {
+        "type": "object",
+        "description": "The Companies House company to use.",
+        "additionalProperties": false,
+        "required": [
+          "number"
+        ],
+        "properties": {
+          "number": {
+            "type": "string",
+            "description": "The Companies House number, as returned by the company search, for example 01234567.",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9]{6,10}$",
+            "nullable": false
+          }
+        }
+      },
+      "ListResponseOfCompanyMatchDto": {
+        "type": "object",
+        "description": "A page of results.",
+        "additionalProperties": false,
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "type": "array",
+            "description": "The items on this page.",
+            "items": {
+              "$ref": "#/components/schemas/CompanyMatchDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "description": "Pass as cursor to fetch the next page. Null when there are no more results, except on the events feed, which always returns one.",
+            "nullable": true
+          }
+        }
+      },
+      "CompanyMatchDto": {
+        "type": "object",
+        "description": "A company on the Companies House register.",
+        "additionalProperties": false,
+        "required": [
+          "number",
+          "name"
+        ],
+        "properties": {
+          "number": {
+            "type": "string",
+            "description": "The Companies House number. Pass it to the company endpoint to pick this company."
+          },
+          "name": {
+            "type": "string",
+            "description": "The registered name."
+          },
+          "status": {
+            "type": "string",
+            "description": "The register status, such as active or dissolved, or null.",
+            "nullable": true
+          },
+          "incorporatedOn": {
+            "type": "string",
+            "description": "The date of incorporation (YYYY-MM-DD), or null.",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "description": "The registered office address on one line, or null.",
+            "nullable": true
+          }
+        }
+      },
+      "SearchCompaniesV2Request": {
+        "type": "object",
+        "additionalProperties": false
+      },
+      "UpdateBusinessProfileV2Request": {
+        "type": "object",
+        "description": "The business profile fields to change. A field that is omitted or null is left as it is.",
+        "additionalProperties": false,
+        "properties": {
+          "legalName": {
+            "type": "string",
+            "description": "The registered or trading name of the business, up to 128 characters.",
+            "maxLength": 128,
+            "minLength": 0,
+            "nullable": true
+          },
+          "legalForm": {
+            "$ref": "#/components/schemas/BusinessLegalForm",
+            "description": "The legal form of the business. Changing it clears any Companies House or VAT details."
+          },
+          "country": {
+            "type": "string",
+            "description": "The country the business is registered in, as an ISO 3166-1 alpha-2 code. Changing it clears any Companies House or VAT details.",
+            "nullable": true
+          },
+          "addressLine": {
+            "type": "string",
+            "description": "The first line of the business address, up to 100 characters.",
+            "maxLength": 100,
+            "minLength": 0,
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "description": "The town or city, up to 100 characters.",
+            "maxLength": 100,
+            "minLength": 0,
+            "nullable": true
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "The postal code, up to 15 characters.",
+            "maxLength": 15,
+            "minLength": 0,
+            "nullable": true
+          },
+          "website": {
+            "type": "string",
+            "description": "The business website or public page, such as example.com or facebook.com/yourpage. Send an empty string to clear it.",
+            "nullable": true
+          },
+          "contactEmail": {
+            "type": "string",
+            "description": "The email address to contact the business about verification, up to 256 characters.",
+            "maxLength": 256,
+            "minLength": 0,
+            "nullable": true
+          },
+          "contactPhone": {
+            "type": "string",
+            "description": "The contact phone number in international format, for example +447700900123. Spaces are removed.",
+            "maxLength": 20,
+            "minLength": 0,
+            "nullable": true
+          },
+          "useCase": {
+            "$ref": "#/components/schemas/BusinessUseCase",
+            "description": "What the messages are for."
+          },
+          "contentUrlsAndNumbers": {
+            "type": "string",
+            "description": "The links and phone numbers the messages will contain, or \"none\". Up to 1024 characters.",
+            "maxLength": 1024,
+            "minLength": 0,
+            "nullable": true
+          }
+        }
+      },
       "ListResponseOfV2EventDto": {
         "type": "object",
         "description": "A page of results.",
@@ -16177,6 +17067,10 @@
     {
       "name": "Senders",
       "description": "The sender names and numbers you send SMS from."
+    },
+    {
+      "name": "Business Profile",
+      "description": "The business behind your workspace, which must be verified before sender names are approved."
     },
     {
       "name": "SMS Templates",
