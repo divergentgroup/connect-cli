@@ -18,8 +18,12 @@ import (
 
 	"github.com/divergentgroup/connect-cli/internal/config"
 	"github.com/divergentgroup/connect-cli/internal/creds"
+	"github.com/divergentgroup/connect-cli/internal/output"
 	"golang.org/x/oauth2"
 )
+
+// maxPowDifficulty is a robustness cap so a broken server cannot make the client spin forever.
+const maxPowDifficulty = 32
 
 const signupGrant = "urn:divergent:params:oauth:grant-type:agent-signup"
 
@@ -59,9 +63,17 @@ type Step struct {
 func b64(b []byte) string { return base64.RawURLEncoding.EncodeToString(b) }
 
 // SolvePow finds the smallest decimal solution with sha256(challenge + "." + solution) having at least difficulty leading zero bits.
-func SolvePow(challenge string, difficulty int) string {
+func SolvePow(ctx context.Context, challenge string, difficulty int) (string, error) {
+	if difficulty > maxPowDifficulty {
+		return "", fmt.Errorf("the sign-up service asked for proof of work of difficulty %d, which is more than this client will attempt", difficulty)
+	}
 	buf := []byte(challenge + ".")
 	for n := uint64(0); ; n++ {
+		if n%4096 == 0 {
+			if err := ctx.Err(); err != nil {
+				return "", err
+			}
+		}
 		sum := sha256.Sum256(strconv.AppendUint(buf[:len(buf):len(buf)], n, 10))
 		z := 0
 		for _, b := range sum {
@@ -73,7 +85,7 @@ func SolvePow(challenge string, difficulty int) string {
 			break
 		}
 		if z >= difficulty {
-			return strconv.FormatUint(n, 10)
+			return strconv.FormatUint(n, 10), nil
 		}
 	}
 }
@@ -102,10 +114,14 @@ func post(ctx context.Context, url string, body any) (*Step, error) {
 }
 
 // powRetry calls send, and while the server asks for proof of work solves it and repeats the same request.
-func powRetry(send func(token, solution string) (*Step, error)) (*Step, error) {
+func powRetry(ctx context.Context, send func(token, solution string) (*Step, error)) (*Step, error) {
 	step, err := send("", "")
 	for i := 0; err == nil && step.Next == "pow" && i < 3; i++ {
-		step, err = send(step.PowChallenge, SolvePow(step.PowChallenge, step.PowDifficulty))
+		var sol string
+		if sol, err = SolvePow(ctx, step.PowChallenge, step.PowDifficulty); err != nil {
+			return nil, err
+		}
+		step, err = send(step.PowChallenge, sol)
 	}
 	return step, err
 }
@@ -119,7 +135,7 @@ func SignupStart(ctx context.Context, issuer string, req StartRequest) (*SignupS
 	st := &SignupState{Verifier: b64(v)}
 	sum := sha256.Sum256([]byte(st.Verifier))
 	req.CodeChallenge, req.CodeChallengeMethod = b64(sum[:]), "S256"
-	step, err := powRetry(func(token, solution string) (*Step, error) {
+	step, err := powRetry(ctx, func(token, solution string) (*Step, error) {
 		req.PowToken, req.PowSolution = token, solution
 		return post(ctx, issuer+"/signup/agent/start", req)
 	})
@@ -136,7 +152,7 @@ func SignupCode(ctx context.Context, issuer string, st *SignupState, code string
 
 // SignupResend asks for the current code to be sent again.
 func SignupResend(ctx context.Context, issuer string, st *SignupState) (*Step, error) {
-	return powRetry(func(token, solution string) (*Step, error) {
+	return powRetry(ctx, func(token, solution string) (*Step, error) {
 		body := map[string]string{}
 		if token != "" {
 			body["powToken"], body["powSolution"] = token, solution
@@ -166,7 +182,7 @@ func SignupFinish(ctx context.Context, issuer string, st *SignupState, credentia
 		Description  string `json:"error_description"`
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&t); err != nil || resp.StatusCode != http.StatusOK || t.AccessToken == "" {
-		return nil, fmt.Errorf("could not redeem the sign-up (HTTP %d) %s", resp.StatusCode, t.Description)
+		return nil, fmt.Errorf("could not redeem the sign-up (HTTP %d) %s", resp.StatusCode, output.Clean(t.Description))
 	}
 	tok := (&oauth2.Token{AccessToken: t.AccessToken, RefreshToken: t.RefreshToken, Expiry: time.Now().Add(time.Duration(t.ExpiresIn) * time.Second)}).
 		WithExtra(map[string]any{"scope": t.Scope})

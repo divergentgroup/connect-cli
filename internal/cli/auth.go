@@ -53,7 +53,7 @@ There is no flag that takes the key inline: keys must never land in shell histor
 					return apierr.Auth(err.Error())
 				}
 			}
-			if err := saveProfile(app, cmd, p); err != nil {
+			if _, err := saveProfile(app, cmd, p, false); err != nil {
 				return err
 			}
 			if p.Kind == creds.KindAPIKey {
@@ -71,19 +71,24 @@ There is no flag that takes the key inline: keys must never land in shell histor
 }
 
 // saveProfile names a signed-in profile after its workspace and stores it as the default.
-func saveProfile(app *App, cmd *cobra.Command, p *creds.Profile) error {
+// With tolerant, any failure to read the workspace summary still saves the credential; degraded reports that.
+func saveProfile(app *App, cmd *cobra.Command, p *creds.Profile, tolerant bool) (degraded bool, err error) {
 	store, err := app.store()
 	if err != nil {
-		return err
+		return false, err
 	}
 	summary, err := app.summary(cmd.Context(), &creds.Credential{Profile: p})
 	if err != nil {
 		// A key or grant that cannot even read the workspace summary is useless; but an API
 		// that lacks the endpoint (older deployment) should not lose a successful sign-in.
 		var ae *apierr.Error
-		if !errors.As(err, &ae) || ae.Code != "not_found" {
-			return err
+		if !errors.As(err, &ae) {
+			ae = &apierr.Error{Message: err.Error()}
 		}
+		if !tolerant && ae.Code != "not_found" {
+			return false, err
+		}
+		degraded = true
 		fmt.Fprintf(app.Err, "Warning: could not read the workspace summary (%s); saving the credential without a workspace name.\n", output.Clean(ae.Message))
 		summary = &api.WorkspaceDto{Id: p.WorkspaceID, Name: p.WorkspaceID}
 	}
@@ -96,9 +101,9 @@ func saveProfile(app *App, cmd *cobra.Command, p *creds.Profile) error {
 		p.Name = creds.ProfileName(summary.Name)
 	}
 	if err := store.Put(p); err != nil {
-		return err
+		return false, err
 	}
-	return store.SetDefault(p.Name)
+	return degraded, store.SetDefault(p.Name)
 }
 
 // readSecret reads one line from stdin when piped, else a hidden TTY prompt. Never echoes.
@@ -292,7 +297,8 @@ func signupStep(app *App, cmd *cobra.Command, st *auth.SignupState, step *auth.S
 		return &apierr.Error{Code: "not_found", Message: msg + " If you already finished signing up, run `connect auth status`; otherwise start again with `connect auth signup`."}
 	case step.Status == http.StatusBadRequest:
 		return &apierr.Error{Code: "validation", Message: msg}
-	case step.Status >= 500 || step.Status != http.StatusOK && step.Status != http.StatusConflict:
+	case step.Status != http.StatusOK:
+		// 409 (busy) and anything unexpected: the state file is kept so the same call can be retried.
 		return &apierr.Error{Code: "upstream", Message: msg}
 	}
 	result := map[string]any{"next": step.Next, "message": msg}
@@ -304,9 +310,20 @@ func signupStep(app *App, cmd *cobra.Command, st *auth.SignupState, step *auth.S
 		if err != nil {
 			return apierr.Auth(err.Error())
 		}
-		removeSignup()
-		if err := saveProfile(app, cmd, p); err != nil {
+		// The credential is single use: save it before anything else can fail, and only then drop the state.
+		degraded, err := saveProfile(app, cmd, p, true)
+		if err != nil {
 			return err
+		}
+		removeSignup()
+		if degraded {
+			hint := "Signed in, but the workspace summary could not be read; run `connect workspace show` to check."
+			result["hint"] = hint
+			defer func() {
+				if !app.JSON {
+					fmt.Fprintln(app.Out, hint)
+				}
+			}()
 		}
 		result["profile"], result["workspaceId"], result["workspaceName"] = p.Name, p.WorkspaceID, p.WorkspaceName
 	}
@@ -343,11 +360,13 @@ func saveSignup(st *auth.SignupState) error {
 	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
 		return err
 	}
-	b, _ := json.Marshal(st)
-	if err := os.WriteFile(p, b, 0o600); err != nil {
+	_ = os.Remove(p) // a pre-existing file would keep its old mode
+	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
 		return err
 	}
-	return os.Chmod(p, 0o600)
+	defer f.Close()
+	return json.NewEncoder(f).Encode(st)
 }
 
 func removeSignup() {

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/json"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -25,7 +27,10 @@ func leadingZeroBits(b []byte) int {
 }
 
 func TestSolvePowVerifiesAtDifficulty12(t *testing.T) {
-	sol := SolvePow("challenge-abc", 12)
+	sol, err := SolvePow(t.Context(), "challenge-abc", 12)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if _, err := strconv.ParseUint(sol, 10, 64); err != nil {
 		t.Fatal(sol)
 	}
@@ -38,6 +43,29 @@ func TestSolvePowVerifiesAtDifficulty12(t *testing.T) {
 		if leadingZeroBits(sum[:]) >= 12 {
 			t.Fatal("not the smallest")
 		}
+	}
+}
+
+func TestSolvePowRefusesHugeDifficultyAndHonoursCancel(t *testing.T) {
+	if _, err := SolvePow(t.Context(), "c", 33); err == nil {
+		t.Fatal("difficulty 33 accepted")
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if _, err := SolvePow(ctx, "c", 32); err == nil {
+		t.Fatal("cancelled context ignored")
+	}
+}
+
+func TestFinishCleansErrorDescription(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(400)
+		io.WriteString(w, `{"error":"invalid_grant","error_description":"bad\u001b[31m red"}`)
+	}))
+	defer srv.Close()
+	_, err := SignupFinish(t.Context(), srv.URL, &SignupState{}, "c")
+	if err == nil || strings.Contains(err.Error(), "\x1b") {
+		t.Fatal(err)
 	}
 }
 

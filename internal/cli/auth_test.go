@@ -225,3 +225,75 @@ func TestSignupResendSolvesPowAndJSONHidesCredential(t *testing.T) {
 		t.Fatal(code, out, errb)
 	}
 }
+
+func TestSignupBusy409ExitsFiveAndKeepsState(t *testing.T) {
+	idp := newFakeIdp(t, map[string][]string{
+		"/signup/agent/start":   {`200 {"signupId":"s1","next":"email_code","message":"m"}`},
+		"/signup/agent/s1/code": {`409 {"signupId":"s1","next":"email_code","message":"Busy, try again"}`},
+	})
+	_, do, state := signupApp(t, idp, newStub(t, nil))
+	do(startFlags...)
+	code, _, errb := do("auth", "signup", "verify", "1")
+	if code != 5 || !strings.Contains(errb, "Busy, try again") {
+		t.Fatal(code, errb)
+	}
+	if _, err := os.Stat(state); err != nil {
+		t.Fatal("state lost on 409")
+	}
+}
+
+func TestSignupDoneSavesProfileEvenWhenSummaryFails(t *testing.T) {
+	idp := newFakeIdp(t, map[string][]string{
+		"/signup/agent/start":   {`200 {"signupId":"s1","next":"email_code","message":"m"}`},
+		"/signup/agent/s1/code": {`200 {"signupId":"s1","next":"done","message":"Welcome","credential":"cred1"}`},
+	})
+	app, do, state := signupApp(t, idp, newStub(t, map[string]stubResp{"GET /v2/workspace": {500, `{}`, nil}}))
+	do(startFlags...)
+	code, out, errb := do("auth", "signup", "verify", "1")
+	if code != 0 || !strings.Contains(out, "Welcome") || !strings.Contains(out, "connect workspace show") {
+		t.Fatal(code, out, errb)
+	}
+	if _, err := os.Stat(state); !os.IsNotExist(err) {
+		t.Fatal("state kept")
+	}
+	def, err := app.Store.Default()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if p, err := app.Store.Get(def); err != nil || p.AccessToken != "at" || p.RefreshToken != "rt" {
+		t.Fatal(p, err)
+	}
+}
+
+func TestSignupStateFileBecomesMode0600(t *testing.T) {
+	idp := newFakeIdp(t, map[string][]string{"/signup/agent/start": {`200 {"signupId":"s1","next":"email_code","message":"m"}`}})
+	_, do, state := signupApp(t, idp, newStub(t, nil))
+	if err := os.MkdirAll(filepath.Dir(state), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(state, []byte("old"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code, _, errb := do(startFlags...); code != 0 {
+		t.Fatal(code, errb)
+	}
+	if fi, err := os.Stat(state); err != nil || fi.Mode().Perm() != 0o600 {
+		t.Fatal(err, fi)
+	}
+}
+
+func TestSignupNonJSON502ExitsFiveWithoutEchoingBody(t *testing.T) {
+	idp := newFakeIdp(t, map[string][]string{"/signup/agent/start": {`502 <html>secret-gateway-body</html>`}})
+	_, do, _ := signupApp(t, idp, newStub(t, nil))
+	code, out, errb := do(startFlags...)
+	if code != 5 || strings.Contains(out+errb, "secret-gateway-body") {
+		t.Fatal(code, out, errb)
+	}
+}
+
+func TestSignupVerifyWithoutStateIsUsageError(t *testing.T) {
+	_, do, _ := signupApp(t, newFakeIdp(t, nil), newStub(t, nil))
+	if code, _, errb := do("auth", "signup", "verify", "1"); code != 2 || !strings.Contains(errb, "no sign-up in progress") {
+		t.Fatal(code, errb)
+	}
+}
