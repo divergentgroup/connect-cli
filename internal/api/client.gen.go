@@ -1649,10 +1649,13 @@ type EmailAttachmentDto struct {
 
 // EmailContentDto What is kept of the body after sending.
 type EmailContentDto struct {
-	// Html The HTML body. Not kept after sending, so always null.
+	// Attachments The file names of the attachments, when the workspace keeps full emails; otherwise null. Each is downloaded from /email/{id}/attachments/{name}.
+	Attachments *[]string `json:"attachments,omitempty"`
+
+	// Html The HTML body, when the workspace keeps full emails; otherwise null.
 	Html *string `json:"html,omitempty"`
 
-	// Text A plain-text excerpt of the body, up to 2000 characters, taken from the text body or extracted from the HTML.
+	// Text A plain-text excerpt of the body, up to 2000 characters, taken from the text body or extracted from the HTML. The whole text body when the workspace keeps full emails.
 	Text *string `json:"text,omitempty"`
 }
 
@@ -3359,6 +3362,9 @@ type WorkspaceDto struct {
 	// ApiOnlyMode True when the dashboard never shows recipients or message content.
 	ApiOnlyMode bool `json:"apiOnlyMode"`
 
+	// ContentVisibilityDays Days of message content the dashboard shows, or null when it shows the full content period.
+	ContentVisibilityDays *int32 `json:"contentVisibilityDays,omitempty"`
+
 	// Country The workspace's country, as an ISO 3166-1 alpha-2 code.
 	Country string `json:"country"`
 
@@ -3368,14 +3374,26 @@ type WorkspaceDto struct {
 	// DefaultSender The workspace's default sender as set in the dashboard, or null when none is set. Sends must still name a sender.
 	DefaultSender *string `json:"defaultSender,omitempty"`
 
+	// ExtendedRetentionMonths Paid longer retention in months, or null for the standard periods.
+	ExtendedRetentionMonths *int32 `json:"extendedRetentionMonths,omitempty"`
+
 	// Id The unique id of the workspace.
 	Id string `json:"id"`
+
+	// KeepFullEmails True when full email bodies and attachments are kept.
+	KeepFullEmails bool `json:"keepFullEmails"`
 
 	// Live True once the workspace is live. While false, sends only reach your test numbers, test email addresses and the simulator.
 	Live bool `json:"live"`
 
 	// Name The name of the workspace.
 	Name string `json:"name"`
+
+	// RetentionUnpaidSince When (UTC) paid retention was first seen unpaid, or null while paid up.
+	RetentionUnpaidSince *time.Time `json:"retentionUnpaidSince,omitempty"`
+
+	// RetentionUnpaidWarnedAt When (UTC) the unpaid warning email was delivered; the 30 days before deletion run from here. Null until sent.
+	RetentionUnpaidWarnedAt *time.Time `json:"retentionUnpaidWarnedAt,omitempty"`
 
 	// Sending Whether the workspace can send right now.
 	Sending SendingStateDto `json:"sending"`
@@ -3881,6 +3899,12 @@ type V2CancelEmailParams struct {
 
 // V2GetEmailParams defines parameters for V2GetEmail.
 type V2GetEmailParams struct {
+	// ConnectVersion The API version to use, for example 2026-10-01. Defaults to the version set on your API key.
+	ConnectVersion *string `json:"Connect-Version,omitempty"`
+}
+
+// V2GetEmailAttachmentParams defines parameters for V2GetEmailAttachment.
+type V2GetEmailAttachmentParams struct {
 	// ConnectVersion The API version to use, for example 2026-10-01. Defaults to the version set on your API key.
 	ConnectVersion *string `json:"Connect-Version,omitempty"`
 }
@@ -5125,6 +5149,13 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /v2/email/{id} (the `V2GetEmail` operationId).
 	V2GetEmail(ctx context.Context, id string, params *V2GetEmailParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// V2GetEmailAttachment Download an email attachment
+	//
+	// Returns an attachment of an email the workspace keeps in full, as a file download.
+	//
+	// Corresponds with GET /v2/email/{id}/attachments/{name} (the `V2GetEmailAttachment` operationId).
+	V2GetEmailAttachment(ctx context.Context, id string, name string, params *V2GetEmailAttachmentParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// V2GetEmailEvents List an email's events
 	//
@@ -6901,6 +6932,23 @@ func (c *Client) V2CancelEmail(ctx context.Context, id string, params *V2CancelE
 // Corresponds with GET /v2/email/{id} (the `V2GetEmail` operationId).
 func (c *Client) V2GetEmail(ctx context.Context, id string, params *V2GetEmailParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewV2GetEmailRequest(c.Server, id, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// V2GetEmailAttachment Download an email attachment
+//
+// Returns an attachment of an email the workspace keeps in full, as a file download.
+//
+// Corresponds with GET /v2/email/{id}/attachments/{name} (the `V2GetEmailAttachment` operationId).
+func (c *Client) V2GetEmailAttachment(ctx context.Context, id string, name string, params *V2GetEmailAttachmentParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewV2GetEmailAttachmentRequest(c.Server, id, name, params)
 	if err != nil {
 		return nil, err
 	}
@@ -11410,6 +11458,62 @@ func NewV2GetEmailRequest(server string, id string, params *V2GetEmailParams) (*
 	return req, nil
 }
 
+// NewV2GetEmailAttachmentRequest constructs an http.Request for the V2GetEmailAttachment method
+func NewV2GetEmailAttachmentRequest(server string, id string, name string, params *V2GetEmailAttachmentParams) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "name", name, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/v2/email/%s/attachments/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+
+		if params.ConnectVersion != nil {
+			var headerParam0 string
+
+			headerParam0, err = runtime.StyleParamWithOptions("simple", false, "Connect-Version", *params.ConnectVersion, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Connect-Version", headerParam0)
+		}
+
+	}
+
+	return req, nil
+}
+
 // NewV2GetEmailEventsRequest constructs an http.Request for the V2GetEmailEvents method
 func NewV2GetEmailEventsRequest(server string, id string, params *V2GetEmailEventsParams) (*http.Request, error) {
 	var err error
@@ -15391,6 +15495,15 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /v2/email/{id} (the `V2GetEmail` operationId).
 	V2GetEmailWithResponse(ctx context.Context, id string, params *V2GetEmailParams, reqEditors ...RequestEditorFn) (*V2GetEmailResult, error)
+
+	// V2GetEmailAttachmentWithResponse Download an email attachment
+	//
+	// Returns an attachment of an email the workspace keeps in full, as a file download.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	//
+	// Corresponds with GET /v2/email/{id}/attachments/{name} (the `V2GetEmailAttachment` operationId).
+	V2GetEmailAttachmentWithResponse(ctx context.Context, id string, name string, params *V2GetEmailAttachmentParams, reqEditors ...RequestEditorFn) (*V2GetEmailAttachmentResult, error)
 
 	// V2GetEmailEventsWithResponse List an email's events
 	//
@@ -20226,6 +20339,75 @@ func (r V2GetEmailResult) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r V2GetEmailResult) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type V2GetEmailAttachmentResult struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// ApplicationproblemJSON400 the response for an HTTP 400 `application/problem+json` response
+	ApplicationproblemJSON400 *V2ProblemDetails
+	// ApplicationproblemJSON401 the response for an HTTP 401 `application/problem+json` response
+	ApplicationproblemJSON401 *V2ProblemDetails
+	// ApplicationproblemJSON403 the response for an HTTP 403 `application/problem+json` response
+	ApplicationproblemJSON403 *V2ProblemDetails
+	// ApplicationproblemJSON404 the response for an HTTP 404 `application/problem+json` response
+	ApplicationproblemJSON404 *V2ProblemDetails
+	// ApplicationproblemJSON503 the response for an HTTP 503 `application/problem+json` response
+	ApplicationproblemJSON503 *V2ProblemDetails
+}
+
+// GetApplicationproblemJSON400 returns the response for an HTTP 400 `application/problem+json` response
+func (r V2GetEmailAttachmentResult) GetApplicationproblemJSON400() *V2ProblemDetails {
+	return r.ApplicationproblemJSON400
+}
+
+// GetApplicationproblemJSON401 returns the response for an HTTP 401 `application/problem+json` response
+func (r V2GetEmailAttachmentResult) GetApplicationproblemJSON401() *V2ProblemDetails {
+	return r.ApplicationproblemJSON401
+}
+
+// GetApplicationproblemJSON403 returns the response for an HTTP 403 `application/problem+json` response
+func (r V2GetEmailAttachmentResult) GetApplicationproblemJSON403() *V2ProblemDetails {
+	return r.ApplicationproblemJSON403
+}
+
+// GetApplicationproblemJSON404 returns the response for an HTTP 404 `application/problem+json` response
+func (r V2GetEmailAttachmentResult) GetApplicationproblemJSON404() *V2ProblemDetails {
+	return r.ApplicationproblemJSON404
+}
+
+// GetApplicationproblemJSON503 returns the response for an HTTP 503 `application/problem+json` response
+func (r V2GetEmailAttachmentResult) GetApplicationproblemJSON503() *V2ProblemDetails {
+	return r.ApplicationproblemJSON503
+}
+
+// GetBody returns the raw response body bytes
+func (r V2GetEmailAttachmentResult) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r V2GetEmailAttachmentResult) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r V2GetEmailAttachmentResult) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r V2GetEmailAttachmentResult) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -25081,6 +25263,21 @@ func (c *ClientWithResponses) V2GetEmailWithResponse(ctx context.Context, id str
 	return ParseV2GetEmailResult(rsp)
 }
 
+// V2GetEmailAttachmentWithResponse Download an email attachment
+//
+// Returns an attachment of an email the workspace keeps in full, as a file download.
+//
+// Returns a wrapper object for the known response body format(s).
+//
+// Corresponds with GET /v2/email/{id}/attachments/{name} (the `V2GetEmailAttachment` operationId).
+func (c *ClientWithResponses) V2GetEmailAttachmentWithResponse(ctx context.Context, id string, name string, params *V2GetEmailAttachmentParams, reqEditors ...RequestEditorFn) (*V2GetEmailAttachmentResult, error) {
+	rsp, err := c.V2GetEmailAttachment(ctx, id, name, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseV2GetEmailAttachmentResult(rsp)
+}
+
 // V2GetEmailEventsWithResponse List an email's events
 //
 // The events of one email that are still within the seven-day retention, oldest first. Paginated with cursor.
@@ -29462,6 +29659,63 @@ func ParseV2GetEmailResult(rsp *http.Response) (*V2GetEmailResult, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON401 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON403 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 503:
+		var dest V2ProblemDetails
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.ApplicationproblemJSON503 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseV2GetEmailAttachmentResult parses an HTTP response from a V2GetEmailAttachmentWithResponse call
+func ParseV2GetEmailAttachmentResult(rsp *http.Response) (*V2GetEmailAttachmentResult, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &V2GetEmailAttachmentResult{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case rsp.StatusCode == 204:
+		break // No content-type
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
 		var dest V2ProblemDetails

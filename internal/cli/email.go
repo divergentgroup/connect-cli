@@ -4,9 +4,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"mime"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/divergentgroup/connect-cli/internal/api"
 	"github.com/divergentgroup/connect-cli/internal/apierr"
@@ -77,7 +79,7 @@ var emailFormats = []api.EmailFormat{api.Html, api.Mjml}
 
 func newEmail(app *App) *cobra.Command {
 	c := &cobra.Command{Use: "email", Short: "Send, cancel and inspect email; templates, sending domains and test recipients"}
-	c.AddCommand(newEmailSend(app), newEmailGet(app), newEmailList(app), newEmailCancel(app), newEmailEvents(app),
+	c.AddCommand(newEmailSend(app), newEmailGet(app), newEmailList(app), newEmailCancel(app), newEmailEvents(app), newEmailAttachment(app),
 		newEmailTemplates(app), newEmailDomains(app), newEmailIncludes(app), newEmailTestRecipients(app))
 	return c
 }
@@ -179,11 +181,15 @@ func newEmailGet(app *App) *cobra.Command {
 				if r := m.Reason; r != nil {
 					reason = fmt.Sprintf("%s %s: %s (retryable: %s)", r.Category, r.Code, str(r.Description), yesNo(r.Retryable))
 				}
+				att := ""
 				if m.Content != nil {
 					excerpt = str(m.Content.Text)
+					if m.Content.Attachments != nil {
+						att = strings.Join(*m.Content.Attachments, ", ")
+					}
 				}
 				app.printer().KV([][2]string{{"ID", m.Id}, {"Sender", m.Sender}, {"Recipient", str(m.Recipient)}, {"Subject", str(m.Subject)}, {"Status", string(m.Status)},
-					{"Reason", reason}, {"Kind", string(m.Kind)}, {"Content", excerpt}, {"Opens", fmt.Sprint(m.OpenCount)}, {"Client ref", str(m.ClientReference)},
+					{"Reason", reason}, {"Kind", string(m.Kind)}, {"Content", excerpt}, {"Attachments", att}, {"Opens", fmt.Sprint(m.OpenCount)}, {"Client ref", str(m.ClientReference)},
 					{"Client tag", str(m.ClientTag)}, {"Created", fmtTime(&m.CreatedAt)}, {"Scheduled", fmtTime(m.ScheduledAt)}, {"Sent", fmtTime(m.SentAt)},
 					{"Delivered", fmtTime(m.DeliveredAt)}, {"First opened", fmtTime(m.OpenedAt)}})
 			}))
@@ -270,6 +276,47 @@ func newEmailEvents(app *App) *cobra.Command {
 		},
 	}, "V2GetEmailEvents", scopeEmailRead)
 	p.bind(c)
+	return c
+}
+
+func newEmailAttachment(app *App) *cobra.Command {
+	var out string
+	c := annotate(&cobra.Command{
+		Use:   "attachment ID NAME",
+		Short: "Download an attachment of an email the workspace keeps in full (names are in `email get`)",
+		Args:  exactArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			c, _, err := app.client(cmd)
+			if err != nil {
+				return err
+			}
+			resp, err := c.V2GetEmailAttachment(cmd.Context(), args[0], args[1], nil)
+			if err != nil {
+				return apierr.Upstream(err)
+			}
+			defer resp.Body.Close()
+			body, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return apierr.Upstream(err)
+			}
+			if e := apierr.FromResponse(resp, body); e != nil {
+				return e
+			}
+			if out == "-" {
+				_, err = app.Out.Write(body)
+				return err
+			}
+			if out == "" {
+				out = filepath.Base(args[1])
+			}
+			if err := os.WriteFile(out, body, 0o600); err != nil {
+				return apierr.Usage(err.Error())
+			}
+			fmt.Fprintln(app.Out, out)
+			return nil
+		},
+	}, "V2GetEmailAttachment", scopeEmailRead)
+	c.Flags().StringVarP(&out, "output", "o", "", "file to write (default: the attachment's name in the current directory; - for stdout)")
 	return c
 }
 

@@ -7620,6 +7620,104 @@
         ]
       }
     },
+    "/v2/email/{id}/attachments/{name}": {
+      "get": {
+        "tags": [
+          "Email"
+        ],
+        "summary": "Download an email attachment",
+        "description": "Returns an attachment of an email the workspace keeps in full, as a file download.",
+        "operationId": "V2GetEmailAttachment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "The id of the email.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "description": "The file name of the attachment.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Connect-Version",
+            "in": "header",
+            "description": "The API version to use, for example 2026-10-01. Defaults to the version set on your API key.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "No such email, no such attachment, or the caller may not see content.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request is not valid. The detail field says why, and errors lists any problems by field name.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key or bearer token is missing or not valid, or the request signature could not be verified.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The caller is not allowed to do this.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The service is temporarily unavailable. Retry after the Retry-After header.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/V2ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          }
+        },
+        "security": [
+          {
+            "ApiKeyAuth": []
+          }
+        ]
+      }
+    },
     "/v2/reports/email/deliverability": {
       "get": {
         "tags": [
@@ -11381,6 +11479,7 @@
           "apiOnlyMode",
           "sending",
           "country",
+          "keepFullEmails",
           "createdAt",
           "testNumbers"
         ],
@@ -11417,6 +11516,34 @@
           "timeZone": {
             "type": "string",
             "description": "The workspace's IANA time zone, e.g. Europe/London, or null when not set.",
+            "nullable": true
+          },
+          "contentVisibilityDays": {
+            "type": "integer",
+            "description": "Days of message content the dashboard shows, or null when it shows the full content period.",
+            "format": "int32",
+            "nullable": true
+          },
+          "extendedRetentionMonths": {
+            "type": "integer",
+            "description": "Paid longer retention in months, or null for the standard periods.",
+            "format": "int32",
+            "nullable": true
+          },
+          "keepFullEmails": {
+            "type": "boolean",
+            "description": "True when full email bodies and attachments are kept."
+          },
+          "retentionUnpaidSince": {
+            "type": "string",
+            "description": "When (UTC) paid retention was first seen unpaid, or null while paid up.",
+            "format": "date-time",
+            "nullable": true
+          },
+          "retentionUnpaidWarnedAt": {
+            "type": "string",
+            "description": "When (UTC) the unpaid warning email was delivered; the 30 days before deletion run from here. Null until sent.",
+            "format": "date-time",
             "nullable": true
           },
           "createdAt": {
@@ -14962,13 +15089,21 @@
         "properties": {
           "html": {
             "type": "string",
-            "description": "The HTML body. Not kept after sending, so always null.",
+            "description": "The HTML body, when the workspace keeps full emails; otherwise null.",
             "nullable": true
           },
           "text": {
             "type": "string",
-            "description": "A plain-text excerpt of the body, up to 2000 characters, taken from the text body or extracted from the HTML.",
+            "description": "A plain-text excerpt of the body, up to 2000 characters, taken from the text body or extracted from the HTML. The whole text body when the workspace keeps full emails.",
             "nullable": true
+          },
+          "attachments": {
+            "type": "array",
+            "description": "The file names of the attachments, when the workspace keeps full emails; otherwise null. Each is downloaded from /email/{id}/attachments/{name}.",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -15406,6 +15541,10 @@
             "nullable": false
           }
         }
+      },
+      "GetEmailAttachmentV2Request": {
+        "type": "object",
+        "additionalProperties": false
       },
       "EmailDeliverabilityReportDto": {
         "type": "object",

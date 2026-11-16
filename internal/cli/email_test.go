@@ -10,7 +10,7 @@ import (
 )
 
 const emailBody = `{"id":"e1","sender":"hi@acme.test","recipient":"ann@example.com","subject":"Hello","status":"delivered","kind":"transactional","openCount":2,
-"content":{"text":"Hi Ann"},"createdAt":"2026-11-12T10:00:00Z","updatedAt":"2026-11-12T10:00:05Z","deliveredAt":"2026-11-12T10:00:05Z"}`
+"content":{"text":"Hi Ann","attachments":["invoice.pdf","terms.pdf"]},"createdAt":"2026-11-12T10:00:00Z","updatedAt":"2026-11-12T10:00:05Z","deliveredAt":"2026-11-12T10:00:05Z"}`
 
 const domainBody = `{"id":"d1","domain":"mail.acme.test","status":"pending","needsUpgrade":false,"createdAt":"2026-11-12T10:00:00Z",
 "records":[{"type":"TXT","name":"lm._domainkey.mail.acme.test","value":"v=DKIM1; p=abc","purpose":"dkim","required":true,"status":"pending"}]}`
@@ -39,6 +39,8 @@ func TestEmailCommandsRequestShape(t *testing.T) {
 		{[]string{"email", "send", "--to", "ann@example.com", "--from", "hi@acme.test", "--subject", "Hi", "--template", "welcome", "--data", `{"name":"Ann"}`}, "POST /v2/email", emailBody,
 			[]string{`"template":{"data":{"name":"Ann"},"name":"welcome"}`}, "", "e1"},
 		{[]string{"email", "get", "e1"}, "GET /v2/email/e1", emailBody, nil, "", "Hi Ann"},
+		{[]string{"email", "get", "e1"}, "GET /v2/email/e1", emailBody, nil, "", "invoice.pdf, terms.pdf"},
+		{[]string{"email", "attachment", "e1", "invoice.pdf", "-o", "-"}, "GET /v2/email/e1/attachments/invoice.pdf", "%PDF-1.7", nil, "", "%PDF-1.7"},
 		{[]string{"email", "list", "--status", "delivered", "--kind", "transactional", "--to", "ann@example.com", "--client-tag", "promo", "--limit", "10"}, "GET /v2/email", list(emailBody), nil,
 			"clientTag=promo&kind=transactional&limit=10&recipient=ann%40example.com&status=delivered", "e1\t"},
 		{[]string{"email", "cancel", "e1"}, "DELETE /v2/email/e1", emailBody, nil, "", "Cancelled e1"},
@@ -92,6 +94,18 @@ func TestEmailCommandsRequestShape(t *testing.T) {
 				t.Fatal(s.last.URL.RawQuery)
 			}
 		})
+	}
+}
+
+func TestEmailAttachmentWritesTheFile(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "saved.pdf")
+	s := newStub(t, map[string]stubResp{"GET /v2/email/e1/attachments/invoice.pdf": {200, "%PDF-1.7", nil}})
+	_, do := testAppWithKey(t, s)
+	if code, out, errb := do("email", "attachment", "e1", "invoice.pdf", "-o", file); code != 0 || out != file+"\n" {
+		t.Fatal(code, out, errb)
+	}
+	if raw, _ := os.ReadFile(file); string(raw) != "%PDF-1.7" {
+		t.Fatal(string(raw))
 	}
 }
 
