@@ -152,7 +152,7 @@ func newWebhooks(app *App) *cobra.Command {
 }
 
 func newAPIKeys(app *App) *cobra.Command {
-	c := &cobra.Command{Use: "api-keys", Short: "Workspace API keys (API key only)"}
+	c := &cobra.Command{Use: "api-keys", Short: "Workspace API keys"}
 	list := annotate(&cobra.Command{
 		Use: "list", Short: "List API keys (values are never shown)", Args: exactArgs(0),
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -165,7 +165,7 @@ func newAPIKeys(app *App) *cobra.Command {
 				return []string{k.Id, str(k.Name), k.KeyPrefix + "..." + k.KeyLast4, fmtTime(&k.ActiveFrom), fmtTime(k.ExpiresAt), fmtTime(k.LastUsedAt), yesNo(k.StrictMode)}
 			}))
 		},
-	}, "V2ListApiKeys", scopeAPIKeyOnly)
+	}, "V2ListApiKeys", "connect:api-keys.write")
 	var name string
 	create := annotate(&cobra.Command{
 		Use: "create", Short: "Create an API key; the key is printed once", Args: exactArgs(0),
@@ -180,7 +180,7 @@ func newAPIKeys(app *App) *cobra.Command {
 				app.secretOnce("The API key", k.Key)
 			}))
 		},
-	}, "V2CreateApiKey", scopeAPIKeyOnly)
+	}, "V2CreateApiKey", "connect:api-keys.write")
 	create.Flags().StringVar(&name, "name", "", "a name to recognise the key by")
 	cycle := annotate(&cobra.Command{
 		Use: "cycle ID", Aliases: []string{"rotate"}, Short: "Issue a replacement key; the old one expires an hour later. Printed once", Args: exactArgs(1),
@@ -196,7 +196,7 @@ func newAPIKeys(app *App) *cobra.Command {
 				app.secretOnce("The new signing secret", k.SigningSecret)
 			}))
 		},
-	}, "V2RotateApiKey", scopeAPIKeyOnly)
+	}, "V2RotateApiKey", "connect:api-keys.write")
 	del := annotate(&cobra.Command{
 		Use: "delete ID", Short: "Revoke an API key", Args: exactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -207,7 +207,7 @@ func newAPIKeys(app *App) *cobra.Command {
 			resp, err := c.V2DeleteApiKey(cmd.Context(), args[0], nil)
 			return app.finish(resp, err, app.done("API key revoked"))
 		},
-	}, "V2DeleteApiKey", scopeAPIKeyOnly)
+	}, "V2DeleteApiKey", "connect:api-keys.write")
 	c.AddCommand(list, create, cycle, del)
 	return c
 }

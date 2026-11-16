@@ -250,7 +250,7 @@ func newAuthSignup(app *App) *cobra.Command {
 	c.Flags().StringVar(&req.WorkspaceName, "workspace", "", "name for the new workspace")
 	c.Flags().StringVar(&req.Brand, "brand", "", "connect or puresms (default if omitted)")
 	c.Flags().BoolVar(&req.AgreeTerms, "agree-terms", false, "the person has read and agreed to the online services agreement")
-	c.Flags().BoolVar(&req.AllowSetup, "allow-setup", false, "also allow set-up actions (sender names, email domains, test recipients)")
+	c.Flags().BoolVar(&req.AllowSetup, "allow-setup", false, "also allow set-up actions (sender names, email domains, test recipients, API keys)")
 
 	verify := &cobra.Command{
 		Use:   "verify CODE",
